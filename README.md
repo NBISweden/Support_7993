@@ -1,8 +1,8 @@
-# Support NNNN 
+# Support 7993
 
-**Title of the project from redmine issue**
+**Association between microbiome, genetic susceptibility and psoriasis severity**
 
-Description from the redmine issue.
+Investigation on the association between different types of (50) SNPs, the relative abundance of gut bacterial genera and the severity of psoriasis measured by PASI. Data should be adjusted for age, ex, BMI, smoking,alcohol intake. 
 
 ## Overview
 
