@@ -1,6 +1,6 @@
 FROM condaforge/mambaforge:4.10.1-0
-LABEL org.opencontainers.image.source=https://github.com/NBISweden/repo \
-    org.opencontainers.image.description="Dockerfile for the #NNNN NBIS support project" \
+LABEL org.opencontainers.image.source=https://github.com/NBISweden/Support_7993 \
+    org.opencontainers.image.description="Dockerfile for the #7993 NBIS support project" \
     org.opencontainers.image.licenses=MIT \
     author="Lokeshwaran Manoharan" \
     email="lokeshwaran.manoharan@nbis.se"
