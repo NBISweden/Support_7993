@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -A naiss2025-22-417
 #SBATCH -p shared
-#SBATCH --mem=225GB
+#SBATCH --mem=100G
 #SBATCH -J 16S_amp
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=lokeshwaran.manoharan@nbis.se
