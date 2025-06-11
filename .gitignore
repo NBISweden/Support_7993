@@ -28,3 +28,5 @@ results/*
 
 scratch/*
 !scratch/README.md
+
+code/nextflow
