@@ -30,3 +30,4 @@ scratch/*
 !scratch/README.md
 
 code/nextflow
+code/.nextflow*

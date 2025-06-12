@@ -20,8 +20,8 @@ export NXF_SINGULARITY_CACHEDIR=../scratch/singularity_cache
     --project "naiss2025-22-417" \
     --input "../data/16s_samplesheet.tsv" \
     --outdir "../results/ampliseq_16S_output" \
-    --FW_primer "GTGYCAGCMGCCGCGGTAA" \
-    --RV_primer "CCGYCAATTYMTTTRAGTTT" \
+    --FW_primer "CTACGGGNGGCWGCAG" \
+    --RV_primer "GACTACHVGGGTATCTAATCC" \
     --min_read_counts 5 \
     --ignore_empty_input_files \
     --double_primer \
