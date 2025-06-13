@@ -27,6 +27,7 @@ RUN wget https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VE
     libhdf5-dev \
     libfftw3-dev \
     libopenblas-dev \
+    openssh-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
