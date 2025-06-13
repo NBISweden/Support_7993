@@ -1,5 +1,5 @@
 {
-    "image": "ghcr.io/nbisweden/support-NNNN",
+    "image": "ghcr.io/nbisweden/support-7993:latest",
     "customizations": {
         "vscode": {
         "extensions": [
@@ -17,7 +17,7 @@
         "settings": {
             "r.rterm.linux": "/opt/conda/bin/R",
             "quarto.usePipQuarto": false,
-            "quarto.path": "/opt/conda/bin/quarto",
+            "quarto.path": "/opt/quarto/bin/quarto",
             "quarto.render.renderOnSaveShiny": false,
             "quarto.render.previewType": "external",
             "terminal.integrated.inheritEnv": false,
