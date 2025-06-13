@@ -25,6 +25,9 @@ logs/*
 
 results/*
 !results/stats/
+!results/ampliseq_16S_output/
+results/ampliseq_16S_output/*
+!results/ampliseq_16S_output/pipeline_info
 
 scratch/*
 !scratch/README.md

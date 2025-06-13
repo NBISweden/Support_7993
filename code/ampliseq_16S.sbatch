@@ -1,13 +1,13 @@
 #!/bin/bash -l
 #SBATCH -A naiss2025-22-417
-#SBATCH -p shared
-#SBATCH --mem=100G
+#SBATCH -p main
+#SBATCH --mem=200GB
 #SBATCH -J 16S_amp
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=lokeshwaran.manoharan@nbis.se
 #SBATCH --error=../logs/nfcore_ampliseq_16S.err
 #SBATCH --output=../logs/nfcore_ampliseq_16S.out
-#SBATCH -t 5-00:00:00
+#SBATCH -t 1-00:00:00
 
 module load bioinfo-tools
 module load PDC singularity
@@ -28,7 +28,7 @@ export NXF_SINGULARITY_CACHEDIR=../scratch/singularity_cache
     --ignore_failed_trimming \
     --ignore_failed_filtering \
     --min_len_asv 350 \
-    --max_len_asv 450 \
+    --max_len_asv 700 \
     --dada_taxonomy_rc \
     --skip_dada_addspecies \
     -c "../config/denoise.conf" \
