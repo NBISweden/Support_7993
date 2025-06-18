@@ -24,7 +24,9 @@ logs/*
 !logs/README.md
 
 results/*
+results/stats/*html
 !results/stats/
+!results/stats/*qmd
 !results/ampliseq_16S_output/
 results/ampliseq_16S_output/*
 !results/ampliseq_16S_output/pipeline_info
