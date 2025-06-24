@@ -1,0 +1,74 @@
+---
+title: "Psoariasis Severity - Microbiome I"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+# Loading packages and running LULU
+
+```{r}
+#| label: lulu 
+#| warning: false
+#| message: false
+#| eval: false
+
+
+library(lulu)
+otu_table_raw <- read.table("../ampliseq_16S_output/asv_length_filter/ASV_table.len.tsv", header = T, row.names = 1)
+lulu_match <- read.table("../lulu/match_list.txt")
+curated_result <- lulu(otu_table_raw, lulu_match, minimum_match = 95)
+lulu_otu_table <- curated_result$curated_table
+
+write.table(lulu_otu_table, "../lulu_otu_table.tsv", sep = "\t")
+```
+
+# Filtering ASVs
+
+```{r}
+#| label: filter 
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(ggplot2)
+library(phyloseq)
+library(dplyr)
+library(tidyverse)
+library(DESeq2)
+library(limma)
+library(ggpubr)
+library(vegan)
+library(plotly)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+sample_info <- read.table("../../data/sample_md.tsv", header = T, sep = "\t", check.names = F)
+row.names(sample_info) <- sample_info$sampleID
+
+lulu_otu_table <- read.table("../lulu_otu_table.tsv", header = T, row.names = 1, sep = "\t")
+
+taxa_info <- read.table("../processed_taxa.tsv", header = 1)
+taxa_info <- as.matrix(taxa_info)
+
+OTU = otu_table(lulu_otu_table, taxa_are_rows = TRUE)
+TAX = tax_table(taxa_info)
+META = sample_data(sample_info)
+
+psor_psq = phyloseq(OTU, TAX, META)
+```
+
