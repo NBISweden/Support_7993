@@ -92,13 +92,14 @@ for line in args.infile:
     if tmp_list[8] == "confidence":
         continue
     annot = ";".join(tmp_list[1:8])  # Only take the first 7 columns
-    annot = re.sub(";{2,}", "", annot)
+    annot = re.sub(";+$", "", annot)
     if tmp_list[1] != "" and float(tmp_list[8]) >= args.threshold:
         tmp_list1 = re.split(p4, annot)
         if len(tmp_list1) != 7:
             tmp_list1 = complete_list(tmp_list1, 7)
             print(tmp_list[0], "\t".join(tmp_list1), sep="\t", file=args.outfile)
         else:
+            tmp_list1[-1] = '_'.join(tmp_list1[-2:])  # Combine last two elements
             print(tmp_list[0], "\t".join(tmp_list1), sep="\t", file=args.outfile)
     else:
         print(tmp_list[0], "\t".join(["unclassified"] * 7), sep="\t", file=args.outfile)
