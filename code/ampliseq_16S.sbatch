@@ -30,6 +30,5 @@ export NXF_SINGULARITY_CACHEDIR=../scratch/singularity_cache
     --min_len_asv 350 \
     --max_len_asv 700 \
     --dada_taxonomy_rc \
-    --skip_dada_addspecies \
     -c "../config/denoise.conf" \
     -resume
