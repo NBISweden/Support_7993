@@ -1,0 +1,520 @@
+<!--
+  ~ Copyright 2013-2024, Seqera Labs
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<html>
+<head>
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+</head>
+<body>
+<pre class="mermaid" style="text-align: center;">
+flowchart TB
+    subgraph " "
+    v9["Channel.fromList"]
+    v17["Channel.fromPath"]
+    v18["Channel.fromPath"]
+    v19["Channel.fromPath"]
+    v26["Channel.fromList"]
+    v47["name"]
+    v54["name"]
+    v58["action"]
+    v166["suffix"]
+    v172["outfile"]
+    v173["taxlevels_input"]
+    v179["taxlevels_input"]
+    v197["script"]
+    v200["min_frequency"]
+    v201["min_samples"]
+    v202["exclude_taxa"]
+    v214["tax_agglom_min"]
+    v215["tax_agglom_max"]
+    v224["tax_agglom_min"]
+    v225["tax_agglom_max"]
+    v229["outfile"]
+    v233["outfile"]
+    v237["outfile"]
+    v241["outfile"]
+    v247["setting"]
+    v279["Channel.of"]
+    v282["Channel.fromPath"]
+    v285["ch_workflow_summary"]
+    v289["ch_methods_description"]
+    v296["replace_names"]
+    v297["sample_names"]
+    v322[" "]
+    v337["report_abstract"]
+    v338["input_samplesheet"]
+    v339["find_truncation_values"]
+    v340["mergepairs_strategy"]
+    v341["vsearch_cluster"]
+    v342["filter_ssu_stats"]
+    v343["filter_ssu_asv"]
+    v344["filter_codons_fasta"]
+    v345["filter_codons_stats"]
+    v346["itsx_cutasv_summary"]
+    v347["sintax_tax"]
+    v348["kraken2_tax"]
+    v349["pplace_tax"]
+    v350[" "]
+    v351["qiime2_tax"]
+    v352["run_qiime2"]
+    v353["val_used_taxonomy"]
+    v354["qiime2_filtertaxa"]
+    v355["alpha_rarefaction"]
+    v356["diversity_indices"]
+    v357["diversity_indices_alpha"]
+    v358["diversity_indices_beta"]
+    v359["diversity_indices_adonis"]
+    v360["ancom"]
+    v361["ancombc"]
+    v362["ancombc_formula"]
+    v363["picrust_pathways"]
+    v364["sbdi"]
+    end
+    subgraph NFCORE_AMPLISEQ
+    subgraph AMPLISEQ
+    v33([RENAME_RAW_DATA_FILES])
+    v36([FASTQC])
+    subgraph CUTADAPT_WORKFLOW
+    v43([CUTADAPT_BASIC])
+    v48([CUTADAPT_SUMMARY_STD])
+    v50([CUTADAPT_DOUBLEPRIMER])
+    v55([CUTADAPT_SUMMARY_DOUBLEPRIMER])
+    v59([CUTADAPT_SUMMARY_MERGE])
+    v44(( ))
+    v52(( ))
+    v56(( ))
+    v61(( ))
+    v304(( ))
+    end
+    subgraph DADA2_PREPROCESSING
+    v78([DADA2_QUALITY1])
+    v83([TRUNCLEN])
+    v89([DADA2_FILTNTRIM])
+    v108([DADA2_QUALITY2])
+    v82(( ))
+    v92(( ))
+    v113(( ))
+    v120(( ))
+    v121(( ))
+    end
+    v123([DADA2_ERR])
+    v130([DADA2_DENOISING])
+    v134([DADA2_RMCHIMERA])
+    v140([DADA2_STATS])
+    v146([DADA2_MERGE])
+    v149([MERGE_STATS_STD])
+    v151([BARRNAP])
+    v154([BARRNAPSUMMARY])
+    v159([FILTER_LEN_ASV])
+    v162([MERGE_STATS_FILTERLENASV])
+    v167([FORMAT_TAXONOMY])
+    subgraph DADA2_TAXONOMY_WF
+    v174([DADA2_TAXONOMY])
+    v180([DADA2_ADDSPECIES])
+    v177(( ))
+    v183(( ))
+    end
+    v193([QIIME2_INASV])
+    v195([QIIME2_INSEQ])
+    v198([QIIME2_INTAX])
+    v203([QIIME2_TABLEFILTERTAXA])
+    v205([QIIME2_SEQFILTERTABLE])
+    v207([FILTER_STATS])
+    v210([MERGE_STATS_FILTERTAXA])
+    subgraph QIIME2_EXPORT
+    v216([QIIME2_EXPORT_ABSOLUTE])
+    v222([QIIME2_EXPORT_RELASV])
+    v226([QIIME2_EXPORT_RELTAX])
+    v230([COMBINE_TABLE_QIIME2])
+    v234([COMBINE_TABLE_DADA2])
+    v238([COMBINE_TABLE_PPLACE])
+    v242([COMBINE_TABLE_SINTAX])
+    v330(( ))
+    end
+    v248([QIIME2_BARPLOT])
+    v250([METADATA_ALL])
+    v256([METADATA_PAIRWISE])
+    subgraph ROBJECT_WORKFLOW
+    v263([PHYLOSEQ_INASV])
+    v271([PHYLOSEQ])
+    v273([TREESUMMARIZEDEXPERIMENT])
+    v331(( ))
+    v334(( ))
+    end
+    v298([MULTIQC])
+    v365([SUMMARY_REPORT])
+    v10(( ))
+    v27(( ))
+    v34(( ))
+    v142(( ))
+    v144(( ))
+    v153(( ))
+    v155(( ))
+    v158(( ))
+    v164(( ))
+    v171(( ))
+    v246(( ))
+    v252(( ))
+    v258(( ))
+    v293(( ))
+    v294(( ))
+    v295(( ))
+    v301(( ))
+    v302(( ))
+    v303(( ))
+    v310(( ))
+    v314(( ))
+    v315(( ))
+    v316(( ))
+    v317(( ))
+    v318(( ))
+    v319(( ))
+    v320(( ))
+    v323(( ))
+    v324(( ))
+    v326(( ))
+    v328(( ))
+    v329(( ))
+    end
+    end
+    subgraph " "
+    v37[" "]
+    v51[" "]
+    v79[" "]
+    v80[" "]
+    v109[" "]
+    v110[" "]
+    v111[" "]
+    v124[" "]
+    v125[" "]
+    v126[" "]
+    v127[" "]
+    v131[" "]
+    v132[" "]
+    v135[" "]
+    v147[" "]
+    v152[" "]
+    v160[" "]
+    v163[" "]
+    v168[" "]
+    v175[" "]
+    v181[" "]
+    v182[" "]
+    v199[" "]
+    v211[" "]
+    v217[" "]
+    v218[" "]
+    v219[" "]
+    v220[" "]
+    v227[" "]
+    v231[" "]
+    v235[" "]
+    v239[" "]
+    v243[" "]
+    v255["ch_metacolumn_all"]
+    v260["ch_metacolumn_pairwise"]
+    v264[" "]
+    v299[" "]
+    v300[" "]
+    v325[" "]
+    v327[" "]
+    v366[" "]
+    v367[" "]
+    v369["versions"]
+    v371[" "]
+    end
+    v9 --> v10
+    v17 --> v365
+    v18 --> v365
+    v19 --> v365
+    v26 --> v27
+    v27 --> v33
+    v33 --> v36
+    v33 --> v43
+    v33 --> v34
+    v36 --> v37
+    v36 --> v34
+    v43 --> v50
+    v43 --> v34
+    v43 --> v44
+    v47 --> v48
+    v44 --> v48
+    v48 --> v34
+    v48 --> v56
+    v50 --> v51
+    v50 --> v52
+    v50 --> v61
+    v54 --> v55
+    v52 --> v55
+    v55 --> v34
+    v55 --> v56
+    v58 --> v59
+    v56 --> v59
+    v59 --> v149
+    v59 --> v34
+    v59 --> v304
+    v61 --> v78
+    v78 --> v80
+    v78 --> v83
+    v78 --> v79
+    v78 --> v34
+    v78 --> v82
+    v78 --> v120
+    v83 --> v34
+    v83 --> v61
+    v61 --> v89
+    v89 --> v34
+    v89 --> v92
+    v92 --> v108
+    v108 --> v111
+    v108 --> v110
+    v108 --> v109
+    v108 --> v34
+    v108 --> v113
+    v108 --> v121
+    v92 --> v123
+    v123 --> v127
+    v123 --> v126
+    v123 --> v125
+    v123 --> v124
+    v123 --> v34
+    v123 --> v92
+    v123 --> v310
+    v92 --> v130
+    v130 --> v134
+    v130 --> v132
+    v130 --> v131
+    v130 --> v34
+    v130 --> v92
+    v134 --> v135
+    v134 --> v34
+    v134 --> v92
+    v134 --> v144
+    v92 --> v140
+    v140 --> v34
+    v140 --> v142
+    v142 --> v146
+    v144 --> v146
+    v146 --> v149
+    v146 --> v151
+    v146 --> v147
+    v146 --> v159
+    v146 --> v34
+    v146 --> v158
+    v146 --> v314
+    v146 --> v315
+    v146 --> v316
+    v146 --> v317
+    v149 --> v162
+    v149 --> v34
+    v151 --> v152
+    v151 --> v34
+    v151 --> v153
+    v153 --> v154
+    v154 --> v34
+    v154 --> v155
+    v154 --> v318
+    v158 --> v159
+    v159 --> v162
+    v159 --> v193
+    v159 --> v160
+    v159 --> v195
+    v159 --> v207
+    v159 --> v34
+    v159 --> v164
+    v159 --> v171
+    v159 --> v319
+    v159 --> v320
+    v159 --> v324
+    v162 --> v210
+    v162 --> v163
+    v166 --> v167
+    v10 --> v167
+    v167 --> v174
+    v167 --> v180
+    v167 --> v168
+    v167 --> v34
+    v172 --> v174
+    v173 --> v174
+    v171 --> v174
+    v174 --> v180
+    v174 --> v175
+    v174 --> v34
+    v174 --> v177
+    v179 --> v180
+    v180 --> v182
+    v180 --> v181
+    v180 --> v183
+    v193 --> v203
+    v193 --> v34
+    v195 --> v205
+    v195 --> v34
+    v197 --> v198
+    v183 --> v198
+    v198 --> v203
+    v198 --> v199
+    v198 --> v216
+    v198 --> v226
+    v198 --> v248
+    v200 --> v203
+    v201 --> v203
+    v202 --> v203
+    v203 --> v205
+    v203 --> v207
+    v203 --> v216
+    v203 --> v222
+    v203 --> v226
+    v203 --> v248
+    v203 --> v263
+    v203 --> v34
+    v203 --> v326
+    v205 --> v216
+    v205 --> v34
+    v207 --> v210
+    v207 --> v34
+    v207 --> v328
+    v210 --> v211
+    v210 --> v34
+    v214 --> v216
+    v215 --> v216
+    v216 --> v230
+    v216 --> v220
+    v216 --> v219
+    v216 --> v218
+    v216 --> v217
+    v216 --> v234
+    v216 --> v238
+    v216 --> v242
+    v216 --> v34
+    v216 --> v330
+    v222 --> v230
+    v222 --> v234
+    v222 --> v238
+    v222 --> v242
+    v222 --> v34
+    v224 --> v226
+    v225 --> v226
+    v226 --> v227
+    v226 --> v34
+    v229 --> v230
+    v230 --> v231
+    v230 --> v34
+    v233 --> v234
+    v183 --> v234
+    v234 --> v235
+    v234 --> v34
+    v237 --> v238
+    v238 --> v239
+    v238 --> v34
+    v241 --> v242
+    v242 --> v243
+    v242 --> v34
+    v247 --> v248
+    v246 --> v248
+    v248 --> v34
+    v248 --> v329
+    v250 --> v34
+    v250 --> v252
+    v252 --> v255
+    v256 --> v34
+    v256 --> v258
+    v258 --> v260
+    v263 --> v264
+    v263 --> v183
+    v183 --> v271
+    v271 --> v34
+    v271 --> v331
+    v183 --> v273
+    v273 --> v34
+    v273 --> v334
+    v279 --> v34
+    v282 --> v293
+    v285 --> v34
+    v289 --> v34
+    v296 --> v298
+    v297 --> v298
+    v34 --> v298
+    v293 --> v298
+    v294 --> v298
+    v295 --> v298
+    v298 --> v300
+    v298 --> v365
+    v298 --> v299
+    v298 --> v301
+    v322 --> v323
+    v324 --> v325
+    v326 --> v327
+    v337 --> v365
+    v338 --> v365
+    v339 --> v365
+    v340 --> v365
+    v341 --> v365
+    v342 --> v365
+    v343 --> v365
+    v344 --> v365
+    v345 --> v365
+    v346 --> v365
+    v347 --> v365
+    v348 --> v365
+    v349 --> v365
+    v350 --> v365
+    v351 --> v365
+    v352 --> v365
+    v353 --> v365
+    v354 --> v365
+    v355 --> v365
+    v356 --> v365
+    v357 --> v365
+    v358 --> v365
+    v359 --> v365
+    v360 --> v365
+    v361 --> v365
+    v362 --> v365
+    v363 --> v365
+    v364 --> v365
+    v92 --> v365
+    v120 --> v365
+    v121 --> v365
+    v183 --> v365
+    v302 --> v365
+    v303 --> v365
+    v304 --> v365
+    v310 --> v365
+    v314 --> v365
+    v315 --> v365
+    v316 --> v365
+    v317 --> v365
+    v318 --> v365
+    v319 --> v365
+    v320 --> v365
+    v323 --> v365
+    v328 --> v365
+    v329 --> v365
+    v330 --> v365
+    v331 --> v365
+    v334 --> v365
+    v365 --> v367
+    v365 --> v366
+    v365 --> v34
+    v34 --> v369
+    v301 --> v371
+
+</pre>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, maxTextSize: Number.MAX_SAFE_INTEGER, maxEdges: Number.MAX_SAFE_INTEGER });
+</script>
+</body>
+</html>
