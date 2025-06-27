@@ -103,7 +103,7 @@ More than **75%** of the counts are still kept in the dataset after the filterat
  - ASVs that are present in atleast **10** samples with atleast **5 reads** are kept and the rest are filtered.
  - ASVs that were predicted to be **Mitochondria** are removed.
 
-# Including --add_spe information from dada2
+## Including --add_spe information from dada2
 
 ```{r}
 #| label: addspe 
@@ -170,4 +170,33 @@ saveRDS(known_species_asv_ids, '../known_species_asv_ids.RDS')
 ```
 
 There are **367 known species** and **243 known genera** found in this dataset. 
+
+# Alpha and Beta Diversity
+
+```{r}
+#| label: diversity 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+psor_md <- data.frame(sample_data(psor_psq_filt))
+
+# Alpha
+alpha_phylo <- estimate_richness(psor_psq_filt, measures=c("Observed", "Shannon"))
+alpha_div <- alpha_phylo %>%
+  rownames_to_column("SampleID")
+
+## Beta
+psor_rare <- rarefy_even_depth(psor_psq_filt, rngseed = TRUE)
+psor_mds <- phyloseq::ordinate(psor_rare, method = "MDS", distance = "bray")
+
+pco1_var <- psor_mds$values$Rel_corr_eig[1]
+pco1_var <- psor_mds$values$Rel_corr_eig[2]
+
+psor_mds_12 <- psor_mds$vectors[,c(1,2)]
+
+```
 
