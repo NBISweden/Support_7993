@@ -44,5 +44,6 @@ RUN /bin/bash -c "echo \"PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\
 RUN apt-get update && apt-get install less
 RUN mamba install conda-forge::r-remotes
 RUN R -e "remotes::install_github('tobiasgf/lulu')"
+RUN mamba install -c conda-forge jupyter
 # Start Bash shell by default
 CMD /bin/bash

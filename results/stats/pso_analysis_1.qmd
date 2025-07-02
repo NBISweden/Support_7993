@@ -64,6 +64,65 @@ setwd("/workspaces/7993_Mic_Psori/results/stats")
 sample_info <- read.table("../../data/sample_md.tsv", header = T, sep = "\t", check.names = F)
 row.names(sample_info) <- sample_info$SampleID
 
+sample_info$Type <- factor(sample_info$Type, levels = c("control", "pso_nonlesional", "pso_lesional"))
+sample_info$Gender <- as.factor(sample_info$Gender)
+
+sample_info <- sample_info %>% mutate(PsoTreatment = replace(PsoTreatment, PsoTreatment == "0", "None"))
+sample_info$PsoTreatment <- factor(sample_info$PsoTreatment, levels = c("None", "Moisturizer", "TopicalSteroids"))
+
+sample_info$PASISeverity <- as.factor(sample_info$PASISeverity)
+sample_info <- sample_info %>% 
+  mutate(PASISeverity = case_when(
+    PASISeverity == "0" ~ "None",
+    PASISeverity == "1" ~ "Low",
+    PASISeverity == "2" ~ "Medium",
+    PASISeverity == "3" ~ "High",
+    TRUE ~ PASISeverity))
+sample_info$PASISeverity <- factor(sample_info$PASISeverity, levels = c("None", "Low", "Medium", "High"))
+
+sample_info$TypeSeverity <- factor(sample_info$TypeSeverity, 
+  levels = c("control_0", "pso_nonlesional_1", "pso_nonlesional_2", "pso_nonlesional_3",
+  "pso_lesional_1", "pso_lesional_2", "pso_lesional_3"))
+
+sample_info <- sample_info %>% mutate(PrevSysTreatmentPso = replace(PrevSysTreatmentPso, PrevSysTreatmentPso == "", "None"))
+sample_info$PrevSysTreatmentPso <- factor(sample_info$PrevSysTreatmentPso, levels = c("None", "No", "Yes"))
+
+sample_info$AntiinflamMedication <- as.factor(sample_info$AntiinflamMedication)
+sample_info$SSRI <- as.factor(sample_info$SSRI)
+sample_info$OtherMedication <- as.factor(sample_info$OtherMedication)
+sample_info$DiabetesHypertensionHyperlipidemia <- as.factor(sample_info$DiabetesHypertensionHyperlipidemia)
+
+sample_info <- sample_info %>% 
+  mutate(OtherDiseases = case_when(
+    OtherDiseases == "" ~ NA,
+    OtherDiseases == "0" ~ "None",
+    TRUE ~ OtherDiseases))
+sample_info$OtherDiseases <- as.factor(sample_info$OtherDiseases)
+
+sample_info <- sample_info %>% mutate(SmokingSnuff = replace(SmokingSnuff, SmokingSnuff == "0", "None"))
+sample_info$SmokingSnuff <- as.factor(sample_info$SmokingSnuff)
+
+sample_info$Alcohol <- as.factor(sample_info$Alcohol)
+sample_info <- sample_info %>% 
+  mutate(Alcohol = case_when(
+    Alcohol == "0" ~ "None",
+    Alcohol == "1" ~ "Low",
+    Alcohol == "2" ~ "Medium",
+    Alcohol == "3" ~ "High",
+    Alcohol == "4" ~ "VeryHigh",
+    TRUE ~ Alcohol))
+sample_info$Alcohol <- factor(sample_info$Alcohol, levels = c("None", "Low", "Medium", "High", "VeryHigh"))
+
+sample_info <- sample_info %>% 
+  mutate(Arthritis = case_when(
+    Arthritis == "" ~ NA,
+    Arthritis == "0" ~ "None",
+    TRUE ~ Arthritis))
+sample_info$Arthritis <- as.factor(sample_info$Arthritis)
+
+sample_info <- sample_info %>% mutate(Location = replace(Location, SmokingSnuff == "", NA))
+sample_info$Location <- as.factor(sample_info$Location)
+
 lulu_otu_table <- read.table("../lulu_otu_table.tsv", header = T, row.names = 1, sep = "\t")
 
 taxa_info <- read.table("../processed_taxa.tsv", header = 1, row.names = 1, sep = "\t")
@@ -197,6 +256,42 @@ pco1_var <- psor_mds$values$Rel_corr_eig[1]
 pco1_var <- psor_mds$values$Rel_corr_eig[2]
 
 psor_mds_12 <- psor_mds$vectors[,c(1,2)]
+psor_mds_12 <- as.data.frame(psor_mds_12)
+names(psor_mds_12) <- c("PCO1", "PCO2")
+
+div_data <- 
+  alpha_div %>%
+  left_join(psor_mds_12 %>%
+    rownames_to_column("SampleID")) %>%
+  left_join(psor_md) 
+```
+
+```{r}
+#| echo: false
+
+plot_list <- penguins |>
+  split(penguins$species) |>
+  lapply(function(dat){
+    lm(flipper_length_mm ~  body_mass_g, data = dat)
+  }) 
+
+headings <- names(summary_list)
 
 ```
 
+## Summary tabs
+
+:::{.panel-tabset}
+
+```{r, results='asis'}
+#| warning: false
+for (i in seq_along(summary_list)) {
+  cat("# ",headings[i],"\n")
+  cat("```\n")
+  print(summary(summary_list[[i]]))
+  cat("\n```\n")
+  cat('\n\n')
+}
+```
+
+:::
