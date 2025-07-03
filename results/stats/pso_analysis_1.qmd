@@ -120,7 +120,7 @@ sample_info <- sample_info %>%
     TRUE ~ Arthritis))
 sample_info$Arthritis <- as.factor(sample_info$Arthritis)
 
-sample_info <- sample_info %>% mutate(Location = replace(Location, SmokingSnuff == "", NA))
+sample_info <- sample_info %>% mutate(Location = replace(Location, Location == "", NA))
 sample_info$Location <- as.factor(sample_info$Location)
 
 lulu_otu_table <- read.table("../lulu_otu_table.tsv", header = T, row.names = 1, sep = "\t")
@@ -242,40 +242,79 @@ There are **367 known species** and **243 known genera** found in this dataset.
 #| fig-align: center
 
 psor_md <- data.frame(sample_data(psor_psq_filt))
+fac_vec <- psor_md %>%
+  select(where(is.factor)) %>%
+  names()
+num_vec <- psor_md %>%
+  select(where(is.numeric)) %>%
+  names()
 
 # Alpha
 alpha_phylo <- estimate_richness(psor_psq_filt, measures=c("Observed", "Shannon"))
 alpha_div <- alpha_phylo %>%
-  rownames_to_column("SampleID")
+  rownames_to_column("SampleID") %>%
+  left_join(psor_md, by = "SampleID") %>%
+  gather(Diversity_measure, value, "Shannon", "Observed")
 
 ## Beta
 psor_rare <- rarefy_even_depth(psor_psq_filt, rngseed = TRUE)
+psor_bray <- phyloseq::distance(psor_rare, method = "bray")
 psor_mds <- phyloseq::ordinate(psor_rare, method = "MDS", distance = "bray")
 
-pco1_var <- psor_mds$values$Rel_corr_eig[1]
-pco1_var <- psor_mds$values$Rel_corr_eig[2]
+pco1_var <- round(psor_mds$values$Rel_corr_eig[1] * 100, 2)
+pco2_var <- round(psor_mds$values$Rel_corr_eig[2] * 100, 2)
 
 psor_mds_12 <- psor_mds$vectors[,c(1,2)]
 psor_mds_12 <- as.data.frame(psor_mds_12)
 names(psor_mds_12) <- c("PCO1", "PCO2")
 
-div_data <- 
-  alpha_div %>%
-  left_join(psor_mds_12 %>%
-    rownames_to_column("SampleID")) %>%
-  left_join(psor_md) 
+beta_div <- psor_mds_12 %>%
+  rownames_to_column("SampleID") %>%
+  left_join(psor_md, by = "SampleID") 
 ```
 
 ```{r}
+#| label: plot_list 
 #| echo: false
+#| warning: false
+#| message: false
 
-plot_list <- penguins |>
-  split(penguins$species) |>
-  lapply(function(dat){
-    lm(flipper_length_mm ~  body_mass_g, data = dat)
-  }) 
+fac_plot_list <- list()
+fac_adonis_list <- list()
 
-headings <- names(summary_list)
+for (a in 1:length(fac_vec)){
+  # alpha-div plot
+  x <- combn(levels(eval(parse(text=paste0("psor_md$", fac_vec[a])))), 2)
+  my_comparisons <- lapply(seq_len(ncol(x)), function(i) x[,i])
+  alpha_plot <- alpha_div %>%
+    ggboxplot(x = fac_vec[a] ,y =  "value", fill =  fac_vec[a], facet.by = "Diversity_measure", scales = "free", add = "jitter") +
+    stat_compare_means(comparisons = my_comparisons, method = "t.test", hide.ns = T) +
+    theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45,vjust = 0.5 )) 
+  
+  # beta div plot
+  beta_plot <- beta_div %>%
+    ggplot(aes(PCO1, PCO2)) + 
+    geom_point(aes_string(color = fac_vec[a]), size = 3, show.legend = F) +
+    theme_light() +
+    xlab(paste0("PCO1 ", pco1_var, "%")) +
+    ylab(paste0("PCO2 ", pco2_var, "%")) +
+    theme(panel.grid = element_blank()) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = 0, linetype = "dashed") 
+  
+  #plotly
+  fac_plot_list[[a]] <- subplot(ggplotly(alpha_plot), ggplotly(beta_plot), nrows = 1)
+
+  #adonis
+  if(any(is.na(eval(parse(text=paste0("psor_md$", fac_vec[a])))))){
+    temp <- which(is.na(eval(parse(text=paste0("psor_md$", fac_vec[a])))))
+    form <- as.formula(paste("as.matrix(psor_bray)[-temp,-temp]", fac_vec[a], sep="~"))
+    fac_adonis_list[[a]]<- adonis2(form, data=psor_md[-temp,], permutations=999)
+  } else {
+    form <- as.formula(paste("as.matrix(psor_bray)", fac_vec[a], sep="~"))
+    fac_adonis_list[[a]]<- adonis2(form, data=psor_md, permutations=999)
+  }
+}
 
 ```
 
