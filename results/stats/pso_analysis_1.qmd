@@ -23,6 +23,7 @@ format:
 #| warning: false
 #| message: false
 #| eval: false
+#| echo: false
 
 
 library(lulu)
@@ -46,6 +47,7 @@ write.table(lulu_otu_table, "../lulu_otu_table.tsv", sep = "\t")
 #| fig-width: 20
 #| fig-dpi: 400
 #| fig-align: center
+#| echo: false
 
 library(ggplot2)
 library(phyloseq)
@@ -147,6 +149,7 @@ sum(otu_table(psor_psq_raw))
 #| fig-width: 20
 #| fig-dpi: 400
 #| fig-align: center
+#| echo: false
 
 main_taxa <- c("Bacteria", "Archaea")
 psor_psq_tFilt <- subset_taxa(psor_psq_raw, Kingdom %in% main_taxa)
@@ -172,6 +175,7 @@ More than **75%** of the counts are still kept in the dataset after the filterat
 #| fig-width: 20
 #| fig-dpi: 400
 #| fig-align: center
+#| echo: false
 
 add_spe <- read.table("../ampliseq_16S_output/dada2/ASV_tax_species.silva_138_2.tsv", header = 1, sep = "\t")
 spe_exact <- add_spe %>%
@@ -240,6 +244,7 @@ There are **367 known species** and **243 known genera** found in this dataset.
 #| fig-width: 20
 #| fig-dpi: 400
 #| fig-align: center
+#| echo: false
 
 psor_md <- data.frame(sample_data(psor_psq_filt))
 fac_vec <- psor_md %>%
@@ -275,20 +280,21 @@ beta_div <- psor_mds_12 %>%
 
 ```{r}
 #| label: plot_list 
-#| echo: false
 #| warning: false
 #| message: false
+#| echo: false
 
+#fac_plot_list <- htmltools::tagList()
 fac_plot_list <- list()
 fac_adonis_list <- list()
 
 for (a in 1:length(fac_vec)){
   # alpha-div plot
-  x <- combn(levels(eval(parse(text=paste0("psor_md$", fac_vec[a])))), 2)
-  my_comparisons <- lapply(seq_len(ncol(x)), function(i) x[,i])
+  #x <- combn(levels(eval(parse(text=paste0("psor_md$", fac_vec[a])))), 2)
+  #my_comparisons <- lapply(seq_len(ncol(x)), function(i) x[,i])
   alpha_plot <- alpha_div %>%
     ggboxplot(x = fac_vec[a] ,y =  "value", fill =  fac_vec[a], facet.by = "Diversity_measure", scales = "free", add = "jitter") +
-    stat_compare_means(comparisons = my_comparisons, method = "t.test", hide.ns = T) +
+    geom_pwc(method = "t_test", label = "{p.adj.format}{p.adj.signif}", hide.ns = TRUE) +
     theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45,vjust = 0.5 )) 
   
   # beta div plot
@@ -303,7 +309,8 @@ for (a in 1:length(fac_vec)){
     geom_vline(xintercept = 0, linetype = "dashed") 
   
   #plotly
-  fac_plot_list[[a]] <- subplot(ggplotly(alpha_plot), ggplotly(beta_plot), nrows = 1)
+  #fac_plot_list[[a]] <- subplot(ggplotly(alpha_plot), ggplotly(beta_plot), nrows = 1)
+  fac_plot_list[[a]] <- ggarrange(alpha_plot, beta_plot)
 
   #adonis
   if(any(is.na(eval(parse(text=paste0("psor_md$", fac_vec[a])))))){
@@ -315,22 +322,32 @@ for (a in 1:length(fac_vec)){
     fac_adonis_list[[a]]<- adonis2(form, data=psor_md, permutations=999)
   }
 }
-
+names(fac_plot_list) <- fac_vec
+names(fac_adonis_list) <- fac_vec
 ```
 
-## Summary tabs
+## Associations to metadata
 
-:::{.panel-tabset}
-
-```{r, results='asis'}
+```{r}
+#| label: fac_tab1
+#| panel: tabset
+#| output: asis
+#| keep-md: true
 #| warning: false
-for (i in seq_along(summary_list)) {
-  cat("# ",headings[i],"\n")
-  cat("```\n")
-  print(summary(summary_list[[i]]))
-  cat("\n```\n")
-  cat('\n\n')
-}
-```
+#| message: false
+#| fig-height: 8
+#| fig-width: 14
+#| fig-dpi: 300
 
-:::
+library(purrr)
+iwalk(fac_plot_list, ~ {
+  cat('## ', .y, '\n\n')
+  
+  print(.x)
+  #print(fac_adonis_list[[.y]])
+  
+  cat('\n\n')
+  
+})
+
+```
