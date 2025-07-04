@@ -384,6 +384,20 @@ iwalk(gen_plot_list, ~ {
 
 
 # Alpha and Beta Diversity
+
+Here, I have compared the two main `alpha diversity` metrics that were calculated for each of the categorical variable from the metadata:
+
+ - **Observed:** This is just calculating the number of different ASVs present in each sample.
+ - **Shannon:** This is an ecological index to measure the diversity of a sample that takes into account both the number of different ASVs in a sample together with their abundance.
+
+The community composition changes among the different samples is measured through `beta diversity`. The difference between alpha and betadiversity is that in beta we look into the how the whole community changes in the different samples. While, alpha diversity looks only in that particular sample that we are measuring!
+
+One of the best ways to look into this is to see this as a `PCoA plot` or a similar multi-dimentionality reduction methods. It is very similar to `PCA`, where PCA looks into more variation among samples and PCoA or MDS looks into more similarities between the samples.
+
+The beta-diversity for bacterial 16S based community composition is measured with:
+
+ - **Bray-Curtis distance:** This is the most widely used distance metric that basically takes in an abundance matrix from different samples and each of their ASVs and the distance between the samples are calulated based on a metric that is widely used in ecology called bray-curtis distance. From this distance, a visualization such as PCoA is deduced.
+
 ```{r}
 #| label: plot_list 
 #| warning: false
@@ -401,7 +415,8 @@ for (a in 1:length(fac_vec)){
   alpha_plot <- alpha_div %>%
     ggboxplot(x = fac_vec[a] ,y =  "value", fill =  fac_vec[a], facet.by = "Diversity_measure", scales = "free", add = "jitter") +
     geom_pwc(method = "t_test", label = "{p.adj.format}{p.adj.signif}", hide.ns = TRUE) +
-    theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45,vjust = 0.5 )) 
+    theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45,vjust = 0.5 )) +
+    ggtitle("Alpha Diversity")
   
   # beta div plot
   beta_plot <- beta_div %>%
@@ -412,7 +427,8 @@ for (a in 1:length(fac_vec)){
     ylab(paste0("PCO2 ", pco2_var, "%")) +
     theme(panel.grid = element_blank()) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    geom_vline(xintercept = 0, linetype = "dashed") 
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    ggtitle("Beta Diversity")
   
   #plotly
   #fac_plot_list[[a]] <- subplot(ggplotly(alpha_plot), ggplotly(beta_plot), nrows = 1)
