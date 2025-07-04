@@ -234,7 +234,6 @@ saveRDS(known_species_asv_ids, '../known_species_asv_ids.RDS')
 
 There are **367 known species** and **243 known genera** found in this dataset. 
 
-# Alpha and Beta Diversity
 
 ```{r}
 #| label: diversity 
@@ -278,6 +277,113 @@ beta_div <- psor_mds_12 %>%
   left_join(psor_md, by = "SampleID") 
 ```
 
+# Taxonomy Plots
+
+## Phylum
+
+```{r}
+#| label: taxa_plot1 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+#| echo: false
+
+Phylum.sum = tapply(taxa_sums(psor_psq_filt), tax_table(psor_psq_filt)[, "Phylum"], sum, na.rm=FALSE)
+top10Phylum = names(sort(Phylum.sum, TRUE))[1:10]
+top_phylum = prune_taxa((tax_table(psor_psq_filt)[, "Phylum"] %in% top10Phylum), psor_psq_filt)
+
+phyl_plot_list <- list()
+
+for (a in 1:length(fac_vec)){
+  phyl_plot_list[[a]] <- plot_bar(tax_glom(top_phylum, "Phylum"), "SampleID", fill="Phylum") + 
+    facet_wrap(as.formula(paste("~", fac_vec[a])), scale="free_x") + 
+    theme_pubclean(base_size = 20) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_manual(values = c("#EC7063", "#A569BD", "#5DADE2", "#45B39D", "#58D68D", "#F5B041", "#DC7633", "#CACFD2", "#99A3A4", "#2E4053"))
+}
+names(phyl_plot_list) <- fac_vec
+```
+
+```{r}
+#| label: fac_tax1
+#| panel: tabset
+#| output: asis
+#| keep-md: true
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 14
+#| fig-dpi: 300
+
+library(purrr)
+iwalk(phyl_plot_list, ~ {
+  cat('## ', .y, '\n\n')
+  
+  print(.x)
+  #print(fac_adonis_list[[.y]])
+  
+  cat('\n\n')
+  
+})
+
+```
+
+## Genus
+
+```{r}
+#| label: taxa_plot2
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+#| echo: false
+
+genus.sum = tapply(taxa_sums(psor_psq_filt), tax_table(psor_psq_filt)[, "Genus"], sum, na.rm=FALSE)
+top10genus = names(sort(genus.sum, TRUE))[1:10]
+top_gen = prune_taxa((tax_table(psor_psq_filt)[, "Genus"] %in% top10genus), psor_psq_filt)
+
+gen_plot_list <- list()
+
+for (a in 1:length(fac_vec)){
+  gen_plot_list[[a]] <- plot_bar(tax_glom(top_gen, "Genus"), "SampleID", fill="Genus") + 
+    facet_wrap(as.formula(paste("~", fac_vec[a])), scale="free_x") + 
+    theme_pubclean(base_size = 20) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_manual(values = c("#EC7063", "#A569BD", "#5DADE2", "#45B39D", "#58D68D", "#F5B041", "#DC7633", "#CACFD2", "#99A3A4", "#2E4053"))
+}
+names(gen_plot_list) <- fac_vec
+```
+
+```{r}
+#| label: fac_tax2
+#| panel: tabset
+#| output: asis
+#| keep-md: true
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 14
+#| fig-dpi: 300
+
+iwalk(gen_plot_list, ~ {
+  cat('## ', .y, '\n\n')
+  
+  print(.x)
+  #print(fac_adonis_list[[.y]])
+  
+  cat('\n\n')
+  
+})
+
+```
+
+
+# Alpha and Beta Diversity
 ```{r}
 #| label: plot_list 
 #| warning: false
@@ -339,7 +445,6 @@ names(fac_adonis_list) <- fac_vec
 #| fig-width: 14
 #| fig-dpi: 300
 
-library(purrr)
 iwalk(fac_plot_list, ~ {
   cat('## ', .y, '\n\n')
   
