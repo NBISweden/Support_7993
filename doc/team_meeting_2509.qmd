@@ -1,0 +1,103 @@
+---
+title: "Team meeting"
+author: Lokesh Mano
+institute: NBIS, SciLifeLab
+format: 
+    revealjs: 
+      theme: [default, "assets/slides.scss"]
+      include-in-header: "assets/include_head.html"
+      df-print: paged
+      width: 1280
+      height: 720
+      transition: "fade"
+      transition-speed: "fast"
+      smaller: false
+      incremental: false
+      scrollable: false
+      slide-level: 2
+      slide-number: true
+      progress: true
+      date:  09-15-2025
+      date-format: "DD-MMM-YYYY"
+      fig-align: left
+      chalkboard: true
+      callout-icon: true
+      hero: "assets/slide-hero.webp"
+      title-slide-attributes:
+        data-background-image: "assets/cover.webp"
+        data-background-size: "cover"
+        data-background-opacity: "1"
+      header-logo-left: "./assets/nbis.png"
+      header-logo-left-height: 25px
+      header-logo-left-url: "https://nbis.se"
+      header-logo-right: "./assets/scilifelab.png"
+      header-logo-right-height: 25px
+      header-logo-right-url: "https://scilifelab.se"
+      template-partials:
+        - "assets/title-slide.html"
+filters:
+  - reveal-logo
+---
+
+## Support #7993 {background-color="#E9F2D1"}
+
+#### Association between microbiome, genetic susceptibility and psoriasis severity
+
+:::{height="10%"}
+![](assets/skin_microbes.jpg){ width="20%" fig-align="center"}
+:::
+
+:::: {.columns}
+::: {.fragment .column width="50%"}
+
+ - 16S Data (skin and pharynx)
+ - SNP Data (50 markers)
+ - Metadata
+
+:::
+
+::: {.fragment .column width="50%"}
+
+  - 146 samples 
+    - 40 patients (38 with both skin and pharynx)
+    - 68 controls (skin)
+  - Type
+    - Lesional and Non-Lesional
+  - Severity
+    - Continuous PASI values
+  - Secondary confounders
+    - BMI, Age, Sex, Alcohol & Smoking
+
+:::
+::::
+
+## {background-color="#E9F2D1"}
+
+::::: {.columns}
+:::: { .column width="50%"}
+
+### Challenges 
+
+
+  - Data Integration
+    - SNP data with Microbiome for PASI severity
+  - Normalization of microbiome for DI
+    - CLR and hope for the best?
+
+::::
+
+:::: {.fragment .column width="50%"}
+
+### Plans
+
+![Unsupervised](assets/mofa.png){ width="50%" }
+
+
+![Supervised - DIABLO](assets/mixomics.png){ width="50%" }
+
+::::
+:::::
+
+## {background-color="#E9F2D1" .center}
+[Thank you!]{.largest}
+

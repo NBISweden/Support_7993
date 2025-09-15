@@ -45,5 +45,8 @@ RUN apt-get update && apt-get install less
 RUN mamba install conda-forge::r-remotes
 RUN R -e "remotes::install_github('tobiasgf/lulu')"
 RUN mamba install -c conda-forge jupyter
+RUN mamba install -c bioconda r-factominer
+RUN R -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
+RUN R -e "BiocManager::install('mixOmics')"
 # Start Bash shell by default
 CMD /bin/bash
