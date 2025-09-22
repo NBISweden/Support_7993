@@ -1,0 +1,462 @@
+---
+title: "Psoariasis Severity - SNP Markers"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+# Loading packages 
+
+## raw data
+
+```{r}
+#| label: raw 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(ggpubr)
+library(vegan)
+library(plotly)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+sample_info <- read.table("../../data/sample_md.tsv", header = T, sep = "\t", check.names = F)
+row.names(sample_info) <- sample_info$SampleID
+
+sample_info$Type <- factor(sample_info$Type, levels = c("control", "pso_nonlesional", "pso_lesional"))
+sample_info$Gender <- as.factor(sample_info$Gender)
+
+sample_info <- sample_info %>% mutate(PsoTreatment = replace(PsoTreatment, PsoTreatment == "0", "None"))
+sample_info$PsoTreatment <- factor(sample_info$PsoTreatment, levels = c("None", "Moisturizer", "TopicalSteroids"))
+
+sample_info$PASISeverity <- as.factor(sample_info$PASISeverity)
+sample_info <- sample_info %>% 
+  mutate(PASISeverity = case_when(
+    PASISeverity == "0" ~ "None",
+    PASISeverity == "1" ~ "Low",
+    PASISeverity == "2" ~ "Medium",
+    PASISeverity == "3" ~ "High",
+    TRUE ~ PASISeverity))
+sample_info$PASISeverity <- factor(sample_info$PASISeverity, levels = c("None", "Low", "Medium", "High"))
+
+sample_info$TypeSeverity <- factor(sample_info$TypeSeverity, 
+  levels = c("control_0", "pso_nonlesional_1", "pso_nonlesional_2", "pso_nonlesional_3",
+  "pso_lesional_1", "pso_lesional_2", "pso_lesional_3"))
+
+sample_info <- sample_info %>% mutate(PrevSysTreatmentPso = replace(PrevSysTreatmentPso, PrevSysTreatmentPso == "", "None"))
+sample_info$PrevSysTreatmentPso <- factor(sample_info$PrevSysTreatmentPso, levels = c("None", "No", "Yes"))
+
+sample_info$AntiinflamMedication <- as.factor(sample_info$AntiinflamMedication)
+sample_info$SSRI <- as.factor(sample_info$SSRI)
+sample_info$OtherMedication <- as.factor(sample_info$OtherMedication)
+sample_info$DiabetesHypertensionHyperlipidemia <- as.factor(sample_info$DiabetesHypertensionHyperlipidemia)
+
+sample_info <- sample_info %>% 
+  mutate(OtherDiseases = case_when(
+    OtherDiseases == "" ~ NA,
+    OtherDiseases == "0" ~ "None",
+    TRUE ~ OtherDiseases))
+sample_info$OtherDiseases <- as.factor(sample_info$OtherDiseases)
+
+sample_info <- sample_info %>% mutate(SmokingSnuff = replace(SmokingSnuff, SmokingSnuff == "0", "None"))
+sample_info$SmokingSnuff <- as.factor(sample_info$SmokingSnuff)
+
+sample_info$Alcohol <- as.factor(sample_info$Alcohol)
+sample_info <- sample_info %>% 
+  mutate(Alcohol = case_when(
+    Alcohol == "0" ~ "None",
+    Alcohol == "1" ~ "Low",
+    Alcohol == "2" ~ "Medium",
+    Alcohol == "3" ~ "High",
+    Alcohol == "4" ~ "VeryHigh",
+    TRUE ~ Alcohol))
+sample_info$Alcohol <- factor(sample_info$Alcohol, levels = c("None", "Low", "Medium", "High", "VeryHigh"))
+
+sample_info <- sample_info %>% 
+  mutate(Arthritis = case_when(
+    Arthritis == "" ~ NA,
+    Arthritis == "0" ~ "None",
+    TRUE ~ Arthritis))
+sample_info$Arthritis <- as.factor(sample_info$Arthritis)
+
+sample_info <- sample_info %>% mutate(Location = replace(Location, Location == "", NA))
+sample_info$Location <- as.factor(sample_info$Location)
+
+all_gen <- read.table("../../data/snp_raw.tsv", sep = "\t", header = T, check.names = F)
+all_gen[all_gen == ''] <- NA
+```
+
+## Filter samples
+
+Here we filter the SNP data to remove duplicates from the same patient and also the patients that have a lot of missing data. So, for each patient only the sample names that end `P` are kept. Then I also removed samples `'K23MK', 'M21MP' and 'M28MP'` because they have a lot of missing data (`23/49` markers have `NA` values).
+
+```{r}
+#| label: filt 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+target_samples <- sample_info %>% 
+  filter(Type != "pso_nonlesional") %>%
+  pull(SampleID)
+
+all_gen_remDup <- all_gen %>%
+  filter(SampleID %in% target_samples)
+
+row.names(all_gen_remDup) <- all_gen_remDup$SampleID
+all_gen_remDup$SampleID <- NULL
+tail(sort(rowSums(is.na(all_gen_remDup))))
+
+rem_samples <- c('K23MK', 'M21MP', 'M28MP')
+
+all_gen_fin <- all_gen_remDup %>%
+  rownames_to_column('SampleID') %>%
+  filter(!(SampleID %in% rem_samples))
+
+```
+
+# Marker Statistics
+
+```{r}
+#| label: marker stats
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+
+marker_data <- all_gen_fin %>% select(-SampleID)
+
+# Calculate allele statistics for each SNP marker
+allele_info <- apply(marker_data, 2, function(col) {
+  alleles <- unlist(strsplit(na.omit(col), " "))  # Split genotypes into alleles
+  if (length(alleles) == 0) return(NULL)  # Skip empty columns
+  allele_freqs <- table(alleles) / length(alleles)  # Calculate allele frequencies
+  list(
+    NumAlleles = length(unique(alleles)),  # Count unique alleles
+    MAF = if (length(allele_freqs) > 1) min(allele_freqs) else 0  # Calculate minor allele frequency (MAF)
+  )
+})
+
+# Create a data frame with marker statistics (call rate, number of alleles, MAF)
+marker_stats <- data.frame(
+  Marker = colnames(marker_data),  # SNP marker names
+  CallRate = colMeans(!is.na(marker_data)),  # Call rate
+  NumAlleles = sapply(allele_info, function(info) if (!is.null(info)) info$NumAlleles else NA),  # Number of alleles
+  MAF = sapply(allele_info, function(info) if (!is.null(info)) info$MAF else NA)  # MAF
+)
+
+# Preview the marker statistics
+head(marker_stats)
+```
+
+## Filter Markers
+
+```{r}
+#| label: filter markers
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+valid_markers <- marker_stats %>%
+  filter(CallRate >= 0.85,  # Call rate >= 85%
+         NumAlleles <= 2,   # Bi-allelic markers
+         MAF >= 0.05) %>%   # MAF >= 5%
+  pull(Marker)  # Extract marker names
+
+# Filter genotype data to include only valid markers and "CEL file ID"
+filt_gen <- all_gen_fin %>%
+  select(SampleID, all_of(valid_markers))  # Keep valid markers
+
+# Check dimensions of filtered genotype data
+dim(filt_gen)
+```
+
+## Convert to Numeric
+
+```{r}
+#| label: snp to ortho
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+convert_to_numeric <- function(geno_column) {
+  geno_column <- as.character(geno_column)  # Ensure character format to handle factor variables correctly
+  alleles <- unique(unlist(strsplit(na.omit(geno_column), " ")))  # Extract unique alleles by splitting the genotype string
+  if (length(alleles) != 2) return(rep(NA, length(geno_column)))  # Skip non-biallelic SNPs by returning NA for all individuals
+  ref_allele <- alleles[1]  # Define the baseline allele, e.g. reference allele
+  alt_allele <- alleles[2]  # Define the other allele, e.g. alternate allele
+  # Define a function to recode each genotype based on the defined alleles
+  recode <- function(gt) {
+    if (is.na(gt)) return(NA) # Handle missing values
+    if (gt == paste0(ref_allele, " ", ref_allele)) return(0) # Homozygous (allele 1) = 0
+    if (gt == paste0(ref_allele, " ", alt_allele) | gt == paste0(alt_allele, " ", ref_allele)) return(1) # Heterozygous = 1
+    if (gt == paste0(alt_allele, " ", alt_allele)) return(2) # Homozygous (allele 2) = 2
+    return(NA) # Handle unexpected genotypes
+  }
+  sapply(geno_column, recode) # Apply the recode function to each genotype in the column
+}
+
+# Apply the conversion function to all SNP columns in the filtered genotype data
+snp_data <- filt_gen[, -1]  # Remove the "CEL file ID" column to focus on SNP markers
+num_gen_mat <- apply(snp_data, 2, convert_to_numeric)  # Apply the conversion function to each SNP column
+num_gen_mat <- apply(num_gen_mat, 2, function(x) { # Impute missing values with the mean of each column
+  x[is.na(x)] <- mean(x, na.rm = TRUE)
+  return(x)
+})
+```
+
+# PCA
+
+## Type
+
+```{r}
+#| label: pca-type
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+library(FactoMineR)
+pca_result <- PCA(num_gen_mat, graph = FALSE, scale.unit = TRUE)
+pc_data <- data.frame(
+  SampleID = filt_gen$SampleID,  # Retrieve the CEL file IDs from the original data
+  PC1 = pca_result$ind$coord[, 1],  # Extract PC1 scores
+  PC2 = pca_result$ind$coord[, 2],  # Extract PC2 scores
+  PC3 = pca_result$ind$coord[, 3],  # Extract PC3 scores
+  check.names = FALSE  # Prevents R from converting spaces to dots in column names
+)
+pc_data_meta <- pc_data %>% left_join(sample_info, by = "SampleID")
+
+# Calculate the percentage of variance explained by each principal component
+variance_explained <- pca_result$eig[,2]  # Second column contains % variance explained by each PC
+
+# Create labels for the PCA plot axes, including the percentage of variance explained
+pc1_label <- paste0("PC1 (", round(variance_explained[1], 2), "%)")  # Label for PC1
+pc2_label <- paste0("PC2 (", round(variance_explained[2], 2), "%)")  # Label for PC2
+pc3_label <- paste0("PC3 (", round(variance_explained[3], 2), "%)")  # Label for PC3
+
+my_col <- c("#C0C0C0", "#45b6b6ff", "#51bb63ff", "#a74dafff", "#af814dff")
+ggplot(pc_data_meta, aes(x = PC1, y = PC2, color = Type)) +  # Specify the data and aesthetics for the plot
+  geom_point(size = 5, alpha = 0.7) +  # Add points to the plot with transparency (alpha)
+  scale_color_manual(values = my_col) +  # Set custom colors for each species or population
+  labs(title = "PCA - Type",  # Add a title to the plot
+       x = pc1_label,  # Label the x-axis with PC1 and variance explained
+       y = pc2_label) +  # Label the y-axis with PC2 and variance explained
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0, linetype =2) +
+  geom_vline(xintercept = 0, linetype =2)
+```
+
+### Permanova
+
+```{r}
+#| label: permanova-type
+#| warning: false
+#| message: false
+#| eval: false
+
+set.seed(100)
+snp_dist <- dist(num_gen_mat)
+snp_meta <- filt_gen %>% 
+  left_join(sample_info, by = "SampleID") %>%
+  select(!(starts_with("rs")))
+
+adonis2(as.matrix(snp_dist) ~ Type, data = snp_meta, permutations = 999)
+
+```
+
+ * **Type P < 0.001**
+
+## PASISeverity
+
+```{r}
+#| label: pca-PASISeverity
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+ggplot(pc_data_meta, aes(x = PC1, y = PC2, color = PASISeverity)) +  # Specify the data and aesthetics for the plot
+  geom_point(size = 5, alpha = 0.7) +  # Add points to the plot with transparency (alpha)
+  scale_color_manual(values = my_col) +  # Set custom colors for each species or population
+  labs(title = "PCA - PASISeverity",  # Add a title to the plot
+       x = pc1_label,  # Label the x-axis with PC1 and variance explained
+       y = pc2_label) +  # Label the y-axis with PC2 and variance explained
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0, linetype =2) +
+  geom_vline(xintercept = 0, linetype =2)
+```
+
+### Permanova
+
+```{r}
+#| label: permanova-PASISeverity
+#| warning: false
+#| message: false
+#| eval: false
+
+set.seed(100)
+adonis2(as.matrix(snp_dist) ~ PASISeverity, data = snp_meta, permutations = 999)
+
+```
+
+ * **PASISeverity P < 0.01**
+
+## Gender
+
+```{r}
+#| label: pca-Gender
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+ggplot(pc_data_meta, aes(x = PC1, y = PC2, color = Gender)) +  # Specify the data and aesthetics for the plot
+  geom_point(size = 5, alpha = 0.7) +  # Add points to the plot with transparency (alpha)
+  scale_color_manual(values = my_col[3:4]) +  # Set custom colors for each species or population
+  labs(title = "PCA - Gender",  # Add a title to the plot
+       x = pc1_label,  # Label the x-axis with PC1 and variance explained
+       y = pc2_label) +  # Label the y-axis with PC2 and variance explained
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0, linetype =2) +
+  geom_vline(xintercept = 0, linetype =2)
+```
+
+### Permanova
+
+```{r}
+#| label: permanova-Gender
+#| warning: false
+#| message: false
+#| eval: false
+
+set.seed(100)
+adonis2(as.matrix(snp_dist) ~ PASISeverity, data = snp_meta, permutations = 999)
+
+```
+
+ * **Gender P Not Significant**
+
+## Alcohol
+
+```{r}
+#| label: pca-Alcohol
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+ggplot(pc_data_meta, aes(x = PC1, y = PC2, color = Alcohol)) +  # Specify the data and aesthetics for the plot
+  geom_point(size = 5, alpha = 0.7) +  # Add points to the plot with transparency (alpha)
+  scale_color_manual(values = my_col) +  # Set custom colors for each species or population
+  labs(title = "PCA - Alcohol",  # Add a title to the plot
+       x = pc1_label,  # Label the x-axis with PC1 and variance explained
+       y = pc2_label) +  # Label the y-axis with PC2 and variance explained
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0, linetype =2) +
+  geom_vline(xintercept = 0, linetype =2)
+```
+
+### Permanova
+
+```{r}
+#| label: permanova-Alcohol
+#| warning: false
+#| message: false
+#| eval: false
+
+set.seed(100)
+adonis2(as.matrix(snp_dist) ~ Alcohol, data = snp_meta, permutations = 999)
+
+```
+
+ * **Alcohol P Not Significant**
+
+## SmokingSnuff
+
+```{r}
+#| label: pca-SmokingSnuff
+#| warning: false
+#| message: false
+#| fig-height: 8
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+ggplot(pc_data_meta, aes(x = PC1, y = PC2, color = SmokingSnuff)) +  # Specify the data and aesthetics for the plot
+  geom_point(size = 5, alpha = 0.7) +  # Add points to the plot with transparency (alpha)
+  scale_color_manual(values = my_col) +  # Set custom colors for each species or population
+  labs(title = "PCA - SmokingSnuff",  # Add a title to the plot
+       x = pc1_label,  # Label the x-axis with PC1 and variance explained
+       y = pc2_label) +  # Label the y-axis with PC2 and variance explained
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0, linetype =2) +
+  geom_vline(xintercept = 0, linetype =2)
+```
+
+### Permanova
+
+```{r}
+#| label: permanova-SmokingSnuff
+#| warning: false
+#| message: false
+#| eval: false
+
+set.seed(100)
+adonis2(as.matrix(snp_dist) ~ SmokingSnuff, data = snp_meta, permutations = 999)
+
+```
+
+ * **SmokingSnuff P Not Significant**
+
+
