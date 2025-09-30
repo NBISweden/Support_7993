@@ -459,4 +459,13 @@ adonis2(as.matrix(snp_dist) ~ SmokingSnuff, data = snp_meta, permutations = 999)
 
  * **SmokingSnuff P Not Significant**
 
+```{r}
+#| eval: false
+
+num_gen_mat %>%
+  as.data.frame(row.names = filt_gen$SampleID) %>%
+  rownames_to_column('SampleID') %>%
+  write_tsv("./snp_filtered.tsv")
+```
+
 

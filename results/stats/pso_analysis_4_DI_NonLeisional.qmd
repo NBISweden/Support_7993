@@ -1,0 +1,303 @@
+---
+title: "Psoariasis Severity - Data Integration IV - Non Leisional"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+# SNP
+
+We first correct the labels of the SNP data to fit with the microbiome of non-leisional samples.
+
+```{r}
+#| label: micr-sort
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(ggplot2)
+library(phyloseq)
+library(dplyr)
+library(tidyverse)
+library(plotly)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+snp_non <- snp_filt %>%
+  rownames_to_column('SampleID') %>%
+  mutate(SampleID = str_replace(SampleID, "(^M.+)P$", "\\1K")) %>%
+  column_to_rownames(var = "SampleID")
+
+low.count.removal <- function(
+                        data, # OTU count df of size n (sample) x p (OTU)
+                        percent=0.01 # cutoff chosen
+                        ){
+    keep.otu = which(colSums(data)*100/(sum(colSums(data))) > percent)
+    data.filter = data[,keep.otu]
+    return(list(data.filter = data.filter, keep.otu = keep.otu))
+}
+
+spe_glom_psq <- readRDS("../spe_glom_psq.RDS")
+spe_lei <- subset_samples(spe_glom_psq, SampleID %in% row.names(snp_non))
+taxa_info <- as.data.frame(tax_table(spe_lei))
+mic.raw <- as.data.frame(t(otu_table(spe_lei)))
+names(mic.raw) <- taxa_info$Species
+mic.offset <- mic.raw+1
+result.filter <- low.count.removal(mic.offset, percent=0.01)
+mic.filter <- result.filter$data.filter
+length(result.filter$keep.otu) 
+```
+
+### check samples to keep
+
+```{r}
+#| label: micr-samp
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(mixOmics)
+set.seed(100)
+
+lib.size <- apply(mic.filter, 1, sum) # determine total count for each sample
+barplot(lib.size) # and plot as bar plot
+mic.filter <- mic.filter[which(lib.size < 200000 & lib.size > 15000),]
+mic.clr <- logratio.transfo(as.matrix(mic.filter), 
+                             logratio = 'CLR', offset = 0)
+```
+
+The outliers `K26MK` (very low library size) and `K36MK` (very high library size) are removed.
+
+# SNP data 
+
+## sort SNP 
+
+```{r}
+#| label: snp-sort
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+snp.filt <- snp_non[which(row.names(snp_non) %in% row.names(mic.clr)), ]
+snp.filt <- snp.filt[order(row.names(snp.filt)), ]
+mic.clr <- mic.clr[order(row.names(mic.clr)), ]
+
+sample_info <- as.data.frame(sample_data(spe_lei))
+
+sample_info_ord <- snp.filt %>% 
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  dplyr::select(SampleID) %>%
+  left_join(sample_info) %>% 
+  column_to_rownames(var = "SampleID")
+```
+
+# integration
+
+```{r}
+#| label: integ-I
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+library(mixOmics)
+set.seed(100)
+
+X <- list(mic = mic.clr,
+          snp = snp.filt)
+
+Y <- droplevels(sample_info_ord$Type)
+summary(Y)
+
+design <- matrix(0.1, ncol = length(X), nrow = length(X), 
+                dimnames = list(names(X), names(X)))
+diag(design) <- 0
+design 
+```
+
+## Num. of components 
+
+```{r}
+#| label: integ-II
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+diablo.NonLeisional <- block.plsda(X, Y, ncomp = 5, design = design)
+
+set.seed(100) # For reproducibility, remove for your analyses
+perf.diablo.NonLeisional = perf(diablo.NonLeisional, validation = 'Mfold', folds = 10, nrepeat = 10)
+
+# Plot of the error rates based on weighted vote
+plot(perf.diablo.NonLeisional)
+perf.diablo.NonLeisional$choice.ncomp$WeightedVote
+ncomp <- perf.diablo.NonLeisional$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+```
+
+## Num. of variables
+
+
+```{r}
+#| label: integ-III
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+set.seed(123) # for reproducibility
+test.keepX <- list(mic = c(5:9, seq(10, 25, 5)),
+                   snp = c(5:9, seq(10, 20, 2)))
+
+tune.diablo.NonLeisional <- tune.block.splsda(X, Y, ncomp = 2, 
+                              test.keepX = test.keepX, design = design,
+                              validation = 'Mfold', folds = 10, nrepeat = 1, 
+                              BPPARAM = BiocParallel::SnowParam(workers = 2),
+                              dist = "centroids.dist")
+
+list.keepX <- tune.diablo.NonLeisional$choice.keepX
+list.keepX
+```
+
+## Final Model
+
+### Samples
+
+```{r}
+#| label: integ-IV
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+diablo.NonLeisional <- block.splsda(X, Y, ncomp = ncomp, 
+                            keepX = list.keepX, design = design)
+#plotDiablo(diablo.NonLeisional, ncomp = 1)
+plotIndiv(diablo.NonLeisional, ind.names = FALSE, legend = TRUE, 
+          title = 'NonLeisional, DIABLO comp 1 - 2', ellipse = T, abline=T)
+```
+
+### Variables
+
+```{r}
+#| label: integ-V
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 300
+#| fig-align: center
+
+plotVar(diablo.NonLeisional, var.names = FALSE, style = 'graphics', legend = TRUE, 
+        pch = c(16, 17), cex = c(2,2), 
+        col = c('darkorchid', 'brown1'),
+        title = 'NonLeisional, DIABLO comp 1 - 2')
+
+```
+
+#### Circos Plot
+
+```{r}
+#| label: integ-VI
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+circosPlot(diablo.NonLeisional, cutoff = 0.7, line = TRUE, 
+           color.blocks = c('darkorchid', 'brown1'),
+           color.cor = c("chocolate3","grey20"), size.variables = 1)
+```
+
+#### Loadings plot
+
+```{r}
+#| label: integ-VII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+plotLoadings(diablo.NonLeisional, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+```
+
+#### Heatmap
+
+```{r}
+#| label: integ-VIII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+cimDiablo(diablo.NonLeisional, color.blocks = c('darkorchid', 'brown1'),
+          comp = 1, margin=c(8,20), legend.position = "right")
+```
+
+## AUC & Prediction
+
+```{r}
+#| label: integ-IX
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+auc.diablo.NonLeisional.mic <- auroc(diablo.NonLeisional, roc.block = "mic", roc.comp = 2,
+                   print = F)
+
+auc.diablo.NonLeisional.snp <- auroc(diablo.NonLeisional, roc.block = "snp", roc.comp = 2,
+                   print = F)
+
+data.test.NonLeision <- list(mic = mic.clr,
+          snp = snp.filt)
+
+predict.diablo.NonLeision <- predict(diablo.NonLeisional, newdata = data.test.NonLeision)
+confusion.mat.NonLeision <- get.confusion_matrix(truth = droplevels(sample_info_ord$Type), 
+                     predicted = predict.diablo.NonLeision$WeightedVote$centroids.dist[,2])
+confusion.mat.NonLeision
+```

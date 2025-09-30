@@ -1,0 +1,493 @@
+---
+title: "Psoariasis Severity - Data Integration III"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+# Microbiome
+
+## raw counts
+
+```{r}
+#| label: raw 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+#| echo: false
+
+library(ggplot2)
+library(phyloseq)
+library(dplyr)
+library(tidyverse)
+library(plotly)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+sample_info <- read.table("../../data/sample_md.tsv", header = T, sep = "\t", check.names = F)
+row.names(sample_info) <- sample_info$SampleID
+
+sample_info$Type <- factor(sample_info$Type, levels = c("control", "pso_nonlesional", "pso_lesional"))
+sample_info$Gender <- as.factor(sample_info$Gender)
+
+sample_info <- sample_info %>% mutate(PsoTreatment = replace(PsoTreatment, PsoTreatment == "0", "None"))
+sample_info$PsoTreatment <- factor(sample_info$PsoTreatment, levels = c("None", "Moisturizer", "TopicalSteroids"))
+
+sample_info$PASISeverity <- as.factor(sample_info$PASISeverity)
+sample_info <- sample_info %>% 
+  mutate(PASISeverity = case_when(
+    PASISeverity == "0" ~ "None",
+    PASISeverity == "1" ~ "Low",
+    PASISeverity == "2" ~ "Medium",
+    PASISeverity == "3" ~ "High",
+    TRUE ~ PASISeverity))
+sample_info$PASISeverity <- factor(sample_info$PASISeverity, levels = c("None", "Low", "Medium", "High"))
+
+sample_info$TypeSeverity <- factor(sample_info$TypeSeverity, 
+  levels = c("control_0", "pso_nonlesional_1", "pso_nonlesional_2", "pso_nonlesional_3",
+  "pso_lesional_1", "pso_lesional_2", "pso_lesional_3"))
+
+sample_info <- sample_info %>% mutate(PrevSysTreatmentPso = replace(PrevSysTreatmentPso, PrevSysTreatmentPso == "", "None"))
+sample_info$PrevSysTreatmentPso <- factor(sample_info$PrevSysTreatmentPso, levels = c("None", "No", "Yes"))
+
+sample_info$AntiinflamMedication <- as.factor(sample_info$AntiinflamMedication)
+sample_info$SSRI <- as.factor(sample_info$SSRI)
+sample_info$OtherMedication <- as.factor(sample_info$OtherMedication)
+sample_info$DiabetesHypertensionHyperlipidemia <- as.factor(sample_info$DiabetesHypertensionHyperlipidemia)
+
+sample_info <- sample_info %>% 
+  mutate(OtherDiseases = case_when(
+    OtherDiseases == "" ~ NA,
+    OtherDiseases == "0" ~ "None",
+    TRUE ~ OtherDiseases))
+sample_info$OtherDiseases <- as.factor(sample_info$OtherDiseases)
+
+sample_info <- sample_info %>% mutate(SmokingSnuff = replace(SmokingSnuff, SmokingSnuff == "0", "None"))
+sample_info$SmokingSnuff <- as.factor(sample_info$SmokingSnuff)
+
+sample_info$Alcohol <- as.factor(sample_info$Alcohol)
+sample_info <- sample_info %>% 
+  mutate(Alcohol = case_when(
+    Alcohol == "0" ~ "None",
+    Alcohol == "1" ~ "Low",
+    Alcohol == "2" ~ "Medium",
+    Alcohol == "3" ~ "High",
+    Alcohol == "4" ~ "VeryHigh",
+    TRUE ~ Alcohol))
+sample_info$Alcohol <- factor(sample_info$Alcohol, levels = c("None", "Low", "Medium", "High", "VeryHigh"))
+
+sample_info <- sample_info %>% 
+  mutate(Arthritis = case_when(
+    Arthritis == "" ~ NA,
+    Arthritis == "0" ~ "None",
+    TRUE ~ Arthritis))
+sample_info$Arthritis <- as.factor(sample_info$Arthritis)
+
+sample_info <- sample_info %>% mutate(Location = replace(Location, Location == "", NA))
+sample_info$Location <- as.factor(sample_info$Location)
+
+lulu_otu_table <- read.table("../lulu_otu_table.tsv", header = T, row.names = 1, sep = "\t")
+
+taxa_info <- read.table("../processed_taxa.tsv", header = 1, row.names = 1, sep = "\t")
+taxa_info <- as.matrix(taxa_info)
+
+OTU = otu_table(lulu_otu_table, taxa_are_rows = TRUE)
+TAX = tax_table(taxa_info)
+META = sample_data(sample_info)
+
+psor_psq_raw = phyloseq(OTU, TAX, META)
+psor_psq_raw
+sum(otu_table(psor_psq_raw))
+```
+
+## Filtering based on taxa and counts
+
+```{r}
+#| label: filt 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+#| echo: false
+
+main_taxa <- c("Bacteria", "Archaea")
+psor_psq_tFilt <- subset_taxa(psor_psq_raw, Kingdom %in% main_taxa)
+psor_psq_tcFilt <- filter_taxa(psor_psq_tFilt, function(x) sum(x > 5) > (0.1*length(x)), TRUE)
+psor_psq_filt <- subset_taxa(psor_psq_tcFilt, Family != "Mitochondria")
+
+psor_psq_filt
+sum(otu_table(psor_psq_filt))
+```
+
+More than **75%** of the counts are still kept in the dataset after the filteration steps below:
+ - Only ASVs that are **Bacteria** or **Archaea** kept and the other ASVs are thrown out assuming that they are sequencing or PCR artefacts
+ - ASVs that are present in atleast **10** samples with atleast **5 reads** are kept and the rest are filtered.
+ - ASVs that were predicted to be **Mitochondria** are removed.
+
+## Including --add_spe information from dada2
+
+```{r}
+#| label: addspe 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+#| echo: false
+
+add_spe <- read.table("../ampliseq_16S_output/dada2/ASV_tax_species.silva_138_2.tsv", header = 1, sep = "\t")
+spe_exact <- add_spe %>%
+  select(ASV_ID, Genus, Species_exact, confidence) %>%
+  filter(Species_exact != "") %>%
+  filter(confidence > 0.75) %>%
+  mutate(Species_exact = paste0(Genus, '_', Species_exact)) %>%
+  select(ASV_ID, Species_exact)
+
+taxa_new <- tax_table(psor_psq_filt) %>% 
+  as.data.frame() %>%
+  rownames_to_column('ASV_ID') %>%
+  left_join(spe_exact) %>%
+  mutate(Species = ifelse(is.na(Species_exact),
+    Species, Species_exact)) %>%
+  select(-Species_exact)
+
+row.names(taxa_new) <- taxa_new$ASV_ID
+taxa_new$ASV_ID <- NULL
+taxa_new <- as.matrix(taxa_new)
+tax_table(psor_psq_filt) <- tax_table(taxa_new)
+
+known_species <- taxa_new %>%
+  as.data.frame() %>%
+  rownames_to_column("ASV_ID") %>%
+  filter(!grepl("nclass", Species)) 
+
+known_species_asv_ids <- known_species %>%
+  pull(ASV_ID)
+
+known_genus <- taxa_new %>%
+  as.data.frame() %>%
+  rownames_to_column("ASV_ID") %>%
+  filter(!grepl("nclass", Genus))
+
+known_genus_asv_ids <- known_genus %>%
+  pull(ASV_ID)
+
+known_genus %>%
+  pull(Genus) %>%
+  n_distinct()
+
+known_species %>%
+  pull(Species) %>%
+  n_distinct()
+```
+
+There are **367 known species** and **243 known genera** found in this dataset. 
+
+## Genus and Species level tables
+
+```{r}
+#| label: gen-spe tables 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+gen_psq <- prune_taxa(psor_psq_filt, taxa = known_genus_asv_ids)
+sum(otu_table(gen_psq))
+
+spe_psq <- prune_taxa(psor_psq_filt, taxa = known_species_asv_ids)
+sum(otu_table(spe_psq))
+
+gen_glom_psq <- tax_glom(gen_psq, "Genus")
+spe_glom_psq <- tax_glom(spe_psq, "Species")
+
+```
+
+## sort microbiome (leisional)
+
+### check species to keep
+
+```{r}
+#| label: micr-sort
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+low.count.removal <- function(
+                        data, # OTU count df of size n (sample) x p (OTU)
+                        percent=0.01 # cutoff chosen
+                        ){
+    keep.otu = which(colSums(data)*100/(sum(colSums(data))) > percent)
+    data.filter = data[,keep.otu]
+    return(list(data.filter = data.filter, keep.otu = keep.otu))
+}
+
+spe_lei <- subset_samples(spe_glom_psq, SampleID %in% row.names(snp_filt))
+taxa_info <- as.data.frame(tax_table(spe_lei))
+mic.raw <- as.data.frame(t(otu_table(spe_lei)))
+names(mic.raw) <- taxa_info$Species
+mic.offset <- mic.raw+1
+result.filter <- low.count.removal(mic.offset, percent=0.01)
+mic.filter <- result.filter$data.filter
+length(result.filter$keep.otu) 
+```
+
+### check samples to keep
+
+```{r}
+#| label: micr-samp
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(mixOmics)
+set.seed(100)
+
+lib.size <- apply(mic.filter, 1, sum) # determine total count for each sample
+barplot(lib.size) # and plot as bar plot
+mic.filter <- mic.filter[which(lib.size < 200000 & lib.size > 15000),]
+mic.clr <- logratio.transfo(as.matrix(mic.filter), 
+                             logratio = 'CLR', offset = 0)
+```
+
+The outliers `K26MK` (very low library size) and `K36MK` (very high library size) are removed.
+
+# SNP data 
+
+## sort SNP 
+
+```{r}
+#| label: snp-sort
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+snp.filt <- snp_filt[which(row.names(snp_filt) %in% row.names(mic.clr)), ]
+snp.filt <- snp.filt[order(row.names(snp.filt)), ]
+mic.clr <- mic.clr[order(row.names(mic.clr)), ]
+
+sample_info_ord <- snp.filt %>% 
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  dplyr::select(SampleID) %>%
+  left_join(sample_info) %>% 
+  column_to_rownames(var = "SampleID")
+```
+
+# integration
+
+```{r}
+#| label: integ-I
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+library(mixOmics)
+set.seed(100)
+
+X <- list(mic = mic.clr,
+          snp = snp.filt)
+
+Y <- droplevels(sample_info_ord$Type)
+summary(Y)
+
+design <- matrix(0.1, ncol = length(X), nrow = length(X), 
+                dimnames = list(names(X), names(X)))
+diag(design) <- 0
+design 
+```
+
+## Num. of components 
+
+```{r}
+#| label: integ-II
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+diablo.leisional <- block.plsda(X, Y, ncomp = 5, design = design)
+
+set.seed(100) # For reproducibility, remove for your analyses
+perf.diablo.leisional = perf(diablo.leisional, validation = 'Mfold', folds = 10, nrepeat = 10)
+
+# Plot of the error rates based on weighted vote
+plot(perf.diablo.leisional)
+perf.diablo.leisional$choice.ncomp$WeightedVote
+ncomp <- perf.diablo.leisional$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+```
+
+## Num. of variables
+
+
+```{r}
+#| label: integ-III
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+set.seed(123) # for reproducibility
+test.keepX <- list(mic = c(5:9, seq(10, 25, 5)),
+                   snp = c(5:9, seq(10, 20, 2)))
+
+tune.diablo.leisional <- tune.block.splsda(X, Y, ncomp = 2, 
+                              test.keepX = test.keepX, design = design,
+                              validation = 'Mfold', folds = 10, nrepeat = 1, 
+                              BPPARAM = BiocParallel::SnowParam(workers = 2),
+                              dist = "centroids.dist")
+
+list.keepX <- tune.diablo.leisional$choice.keepX
+list.keepX
+```
+
+## Final Model
+
+### Samples
+
+```{r}
+#| label: integ-IV
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+diablo.leisional <- block.splsda(X, Y, ncomp = ncomp, 
+                            keepX = list.keepX, design = design)
+#plotDiablo(diablo.leisional, ncomp = 1)
+plotIndiv(diablo.leisional, ind.names = FALSE, legend = TRUE, 
+          title = 'Leisional, DIABLO comp 1 - 2', ellipse = T, abline=T)
+```
+
+### Variables
+
+```{r}
+#| label: integ-V
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 300
+#| fig-align: center
+
+plotVar(diablo.leisional, var.names = FALSE, style = 'graphics', legend = TRUE, 
+        pch = c(16, 17), cex = c(2,2), 
+        col = c('darkorchid', 'brown1'),
+        title = 'Leisional, DIABLO comp 1 - 2')
+
+```
+
+#### Circos Plot
+
+```{r}
+#| label: integ-VI
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+circosPlot(diablo.leisional, cutoff = 0.7, line = TRUE, 
+           color.blocks = c('darkorchid', 'brown1'),
+           color.cor = c("chocolate3","grey20"), size.variables = 1)
+```
+
+#### Loadings plot
+
+```{r}
+#| label: integ-VII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+plotLoadings(diablo.leisional, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+```
+
+#### Heatmap
+
+```{r}
+#| label: integ-VIII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+cimDiablo(diablo.leisional, color.blocks = c('darkorchid', 'brown1'),
+          comp = 1, margin=c(8,20), legend.position = "right")
+```
+
+## AUC & Prediction
+
+```{r}
+#| label: integ-IX
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+auc.diablo.leisional.mic <- auroc(diablo.leisional, roc.block = "mic", roc.comp = 2,
+                   print = F)
+
+auc.diablo.leisional.snp <- auroc(diablo.leisional, roc.block = "snp", roc.comp = 2,
+                   print = F)
+
+data.test.leision <- list(mic = mic.clr,
+          snp = snp.filt)
+
+predict.diablo.leision <- predict(diablo.leisional, newdata = data.test.leision)
+confusion.mat.leision <- get.confusion_matrix(truth = droplevels(sample_info_ord$Type), 
+                     predicted = predict.diablo.leision$WeightedVote$centroids.dist[,2])
+confusion.mat.leision
+```

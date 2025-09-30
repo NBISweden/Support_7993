@@ -6,10 +6,10 @@
 <script src="team_meeting_2509_files/libs/quarto-html/tippy.umd.min.js"></script>
 <link href="team_meeting_2509_files/libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="team_meeting_2509_files/libs/quarto-html/light-border.css" rel="stylesheet">
-<link href="team_meeting_2509_files/libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="team_meeting_2509_files/libs/quarto-html/quarto-syntax-highlighting-e1a5c8363afafaef2c763b6775fbf3ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="team_meeting_2509_files/libs/quarto-contrib/reveal-logo-1.0.0/reveal-logo.js" defer="true"></script>
 <link href="team_meeting_2509_files/libs/quarto-contrib/reveal-logo-1.0.0/reveal-logo.css" rel="stylesheet"><meta charset="utf-8">
-  <meta name="generator" content="quarto-1.8.24">
+  <meta name="generator" content="quarto-1.7.31">
 
   <meta name="author" content="Lokesh Mano">
   <title>Team meeting</title>
@@ -31,7 +31,7 @@
       vertical-align: middle;
     }
   </style>
-  <link rel="stylesheet" href="team_meeting_2509_files/libs/revealjs/dist/theme/quarto-92b424b10e6a40a4b85520dd2af38162.css">
+  <link rel="stylesheet" href="team_meeting_2509_files/libs/revealjs/dist/theme/quarto-2cc048126c04023ab1313658b86f4f15.css">
   <link href="team_meeting_2509_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="team_meeting_2509_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="team_meeting_2509_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -427,7 +427,7 @@
         margin: 0.1,
 
         math: {
-          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
+          mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js',
           config: 'TeX-AMS_HTML-full',
           tex2jax: {
             inlineMath: [['\\(','\\)']],
@@ -501,14 +501,13 @@
           e.clearSelection();
         }
         const getTextToCopy = function(trigger) {
-          const outerScaffold = trigger.parentElement.cloneNode(true);
-          const codeEl = outerScaffold.querySelector('code');
-          for (const childEl of codeEl.children) {
-            if (isCodeAnnotation(childEl)) {
-              childEl.remove();
+            const codeEl = trigger.previousElementSibling.cloneNode(true);
+            for (const childEl of codeEl.children) {
+              if (isCodeAnnotation(childEl)) {
+                childEl.remove();
+              }
             }
-          }
-          return codeEl.innerText;
+            return codeEl.innerText;
         }
         const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
           text: getTextToCopy
