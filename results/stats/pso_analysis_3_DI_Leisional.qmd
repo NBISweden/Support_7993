@@ -367,17 +367,16 @@ ncomp <- perf.diablo.leisional$choice.ncomp$WeightedVote["Overall.BER", "centroi
 #| fig-align: center
 
 set.seed(123) # for reproducibility
-test.keepX <- list(mic = c(5:9, seq(10, 25, 5)),
+test.keepX <- list(mic = c(5:9, seq(10, 40, 5)),
                    snp = c(5:9, seq(10, 20, 2)))
 
-tune.diablo.leisional <- tune.block.splsda(X, Y, ncomp = 2, 
-                              test.keepX = test.keepX, design = design,
-                              validation = 'Mfold', folds = 10, nrepeat = 1, 
-                              BPPARAM = BiocParallel::SnowParam(workers = 2),
-                              dist = "centroids.dist")
-
-list.keepX <- tune.diablo.leisional$choice.keepX
-list.keepX
+# tune.diablo.leisional <- tune.block.splsda(X, Y, ncomp = 2, 
+#                               test.keepX = test.keepX, design = design,
+#                               validation = 'Mfold', folds = 10, nrepeat = 100, 
+#                               BPPARAM = BiocParallel::SnowParam(workers = 12),
+#                               dist = "centroids.dist")
+# list.keepX <- tune.diablo.leisional$choice.keepX
+list.keepX <- list(mic = c(20, 7), snp = c(16, 12))
 ```
 
 ## Final Model

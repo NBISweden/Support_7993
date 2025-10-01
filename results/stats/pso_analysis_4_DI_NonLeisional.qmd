@@ -177,17 +177,17 @@ ncomp <- perf.diablo.NonLeisional$choice.ncomp$WeightedVote["Overall.BER", "cent
 #| fig-align: center
 
 set.seed(123) # for reproducibility
-test.keepX <- list(mic = c(5:9, seq(10, 25, 5)),
+test.keepX <- list(mic = c(5:9, seq(10, 40, 5)),
                    snp = c(5:9, seq(10, 20, 2)))
 
-tune.diablo.NonLeisional <- tune.block.splsda(X, Y, ncomp = 2, 
-                              test.keepX = test.keepX, design = design,
-                              validation = 'Mfold', folds = 10, nrepeat = 1, 
-                              BPPARAM = BiocParallel::SnowParam(workers = 2),
-                              dist = "centroids.dist")
+# tune.diablo.NonLeisional <- tune.block.splsda(X, Y, ncomp = 2, 
+#                               test.keepX = test.keepX, design = design,
+#                               validation = 'Mfold', folds = 10, nrepeat = 100, 
+#                               BPPARAM = BiocParallel::SnowParam(workers = 12),
+#                               dist = "centroids.dist")
+# list.keepX <- tune.diablo.NonLeisional$choice.keepX
 
-list.keepX <- tune.diablo.NonLeisional$choice.keepX
-list.keepX
+list.keepX <- list(mic = c(9, 5), snp = c(20, 7))
 ```
 
 ## Final Model
