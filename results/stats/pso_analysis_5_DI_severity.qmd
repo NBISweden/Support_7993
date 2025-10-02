@@ -39,7 +39,7 @@ theme_set(theme_bw())
 set.seed(100)
 
 setwd("/workspaces/7993_Mic_Psori/results/stats")
-snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+
 
 low.count.removal <- function(
                         data, # OTU count df of size n (sample) x p (OTU)
@@ -61,11 +61,6 @@ result.filter <- low.count.removal(mic.offset, percent=0.01)
 mic.lei.filter <- result.filter$data.filter
 length(result.filter$keep.otu) 
 
-mic.lei.filter <- mic.lei.filter %>%
-  rownames_to_column('SampleID') %>%
-  mutate(SampleID = str_replace(SampleID, "(^M.+)P$", "\\1K")) %>%
-  column_to_rownames(var = "SampleID")
-
 #Non-Leisional microbiome samples
 spe_non <- subset_samples(spe_glom_psq, Type == "pso_nonlesional")
 taxa_info <- as.data.frame(tax_table(spe_non))
@@ -76,6 +71,10 @@ result.filter <- low.count.removal(mic.offset, percent=0.01)
 mic.non.filter <- result.filter$data.filter
 length(result.filter$keep.otu) 
 
+mic.non.filter <- mic.non.filter %>%
+  rownames_to_column('SampleID') %>%
+  mutate(SampleID = str_replace(SampleID, "(^M.+)K$", "\\1P")) %>%
+  column_to_rownames(var = "SampleID")
 ```
 
 ## check samples to keep
@@ -128,3 +127,231 @@ The outliers `M16MK` (high library size) is removed.
 
 # SNP data 
 
+```{r}
+#| label: snp
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+com_samp <- Reduce(intersect, list(row.names(snp_filt), row.names(mic.lei.clr), row.names(mic.non.clr)))
+
+snp.filt <- snp_filt[which(row.names(snp_filt) %in% com_samp), ]
+snp.filt.final <- snp.filt[order(row.names(snp.filt)), ]
+
+mic.lei.final <- mic.lei.clr[which(row.names(mic.lei.clr) %in% com_samp), ]
+mic.lei.final <- mic.lei.final[order(row.names(mic.lei.final)), ] %>%
+                  as.data.frame()
+
+
+mic.non.final <- mic.non.clr[which(row.names(mic.non.clr) %in% com_samp), ]
+mic.non.final <- mic.non.final[order(row.names(mic.non.final)), ] %>%
+                  as.data.frame()
+
+sample_info <- as.data.frame(sample_data(spe_lei))
+
+sample_info_ord <- snp.filt %>% 
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  dplyr::select(SampleID) %>%
+  left_join(sample_info) %>% 
+  column_to_rownames(var = "SampleID")
+```
+
+# Integration
+
+```{r}
+#| label: integ-I
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+library(mixOmics)
+set.seed(100)
+
+X <- list(mic_lei = mic.lei.final,
+          mic_non = mic.non.final,
+          snp = snp.filt.final)
+
+Y <- factor(sample_info_ord$PASISeverity, levels = c("High", "Low", "Medium"))
+summary(Y)
+
+design <- matrix(0.1, ncol = length(X), nrow = length(X), 
+                dimnames = list(names(X), names(X)))
+diag(design) <- 0
+design 
+```
+
+## Num. of components 
+
+```{r}
+#| label: integ-II
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+set.seed(100)
+diablo.Severity <- block.plsda(X, Y, ncomp = 5, design = design)
+
+ # For reproducibility, remove for your analyses
+perf.diablo.Severity = perf(diablo.Severity, validation = 'Mfold', folds = 7, nrepeat = 10)
+
+# Plot of the error rates based on weighted vote
+plot(perf.diablo.Severity)
+perf.diablo.Severity$choice.ncomp$WeightedVote
+ncomp <- perf.diablo.Severity$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+```
+
+## Num. of variables
+
+
+```{r}
+#| label: integ-III
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+set.seed(100) # for reproducibility
+test.keepX <- list(mic_lei = c(5:9, seq(10, 40, 5)),
+                   mic_non = c(5:9, seq(10, 40, 5)),
+                   snp = c(5:9, seq(10, 20, 2)))
+
+# tune.diablo.Severity <- tune.block.splsda(X, Y, ncomp = 2, 
+#                              test.keepX = test.keepX, design = design,
+#                              validation = 'Mfold', folds = 7, nrepeat = 50, 
+#                              BPPARAM = BiocParallel::SnowParam(workers = 12),
+#                              dist = "centroids.dist")
+# list.keepX <- tune.diablo.Severity$choice.keepX
+
+list.keepX <- list(mic_lei = c(30, 5), mic_non = c(5,6), snp = c(12, 20))
+
+```
+
+## Final Model
+
+### Samples
+
+```{r}
+#| label: integ-IV
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+diablo.Severity <- block.splsda(X, Y, ncomp = 2, 
+                            keepX = list.keepX, design = design)
+#plotDiablo(diablo.Severity, ncomp = 1)
+plotIndiv(diablo.Severity, ind.names = FALSE, legend = TRUE, 
+          title = 'Severity, DIABLO comp 1 - 2', ellipse = T, abline=T)
+```
+
+### Variables
+
+```{r}
+#| label: integ-V
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 300
+#| fig-align: center
+
+plotVar(diablo.Severity, var.names = FALSE, style = 'graphics', legend = TRUE, 
+        pch = c(16, 17, 15), cex = c(2,2,2), 
+        col = c('darkorchid', 'brown1', 'lightgreen' ),
+        title = 'Severity, DIABLO comp 1 - 2')
+
+```
+
+#### Circos Plot
+
+```{r}
+#| label: integ-VI
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 10
+#| fig-dpi: 400
+#| fig-align: center
+
+
+circosPlot(diablo.Severity, cutoff = 0.7, line = TRUE, 
+           color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+           color.cor = c("chocolate3","grey20"), size.variables = 1)
+```
+
+#### Loadings plot
+
+```{r}
+#| label: integ-VII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+plotLoadings(diablo.Severity, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+```
+
+#### Heatmap
+
+```{r}
+#| label: integ-VIII
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+cimDiablo(diablo.Severity, color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+          comp = 1, margin=c(8,20), legend.position = "right")
+```
+
+## AUC & Prediction
+
+```{r}
+#| label: integ-IX
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+auc.diablo.Severity.mic <- auroc(diablo.Severity, roc.block = "mic_lei", roc.comp = 2,
+                   print = F)
+
+auc.diablo.Severity.snp <- auroc(diablo.Severity, roc.block = "mic_non", roc.comp = 2,
+                   print = F)
+
+auc.diablo.Severity.snp <- auroc(diablo.Severity, roc.block = "snp", roc.comp = 2,
+                   print = F)
+
+data.test.Severity <- list(mic_lei = mic.lei.final,
+          mic_non = mic.non.final,
+          snp = snp.filt.final)
+
+predict.diablo.Severity <- predict(diablo.Severity, newdata = data.test.Severity)
+confusion.mat.Severity <- get.confusion_matrix(truth = droplevels(sample_info_ord$PASISeverity), 
+                     predicted = predict.diablo.Severity$WeightedVote$centroids.dist[,2])
+confusion.mat.Severity
+```
