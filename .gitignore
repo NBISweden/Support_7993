@@ -11,6 +11,9 @@
 data/*
 !data/README.md
 
+doc/*docx
+doc/*pdf
+
 envs/*
 !envs/Dockerfile
 !envs/environment.yml

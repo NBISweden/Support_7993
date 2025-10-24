@@ -446,6 +446,24 @@ circosPlot(diablo.leisional, cutoff = 0.7, line = TRUE,
 #| fig-align: center
 
 plotLoadings(diablo.leisional, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+mic_loadings_df <- data.frame(
+  variable = rownames(diablo.leisional$loadings$mic),
+  loading = diablo.leisional$loadings$mic[, 1],  # component 1
+  comp = 1
+)
+mic_loadings_df <- mic_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading > 0, "pso_leisional", "control"))
+loadings_plot <- ggplot(mic_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = "Variable",
+    y = "Loading value",
+    title = "Diablo Loadings - pso_leisional vs control"
+  ) +
+  scale_fill_manual(values = c("blue", "orange"))
 ```
 
 #### Heatmap
@@ -460,8 +478,25 @@ plotLoadings(diablo.leisional, comp = 1, contrib = 'max', method = 'median', siz
 #| fig-align: center
 
 
-cimDiablo(diablo.leisional, color.blocks = c('darkorchid', 'brown1'),
-          comp = 1, margin=c(8,20), legend.position = "right")
+cim.res <- cimDiablo(diablo.leisional, transpose = T, color.blocks = c('darkorchid', 'brown1'),
+          comp = 1, margin=c(8,20), legend.position = "topright")
+
+mat <- cim.res$mat
+
+df_long <- as.data.frame(mat) %>%
+  rownames_to_column("Feature") %>%
+  pivot_longer(-Feature, names_to = "Sample", values_to = "Value")
+
+ggplot(df_long, aes(x = Sample, y = Feature, fill = Value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 6)
+  ) +
+  labs(title = "Clustered Image Map (ggplot2 version)",
+       fill = "Expression")
 ```
 
 ## AUC & Prediction
