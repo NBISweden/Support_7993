@@ -210,6 +210,18 @@ plotIndiv(diablo.NonLeisional, ind.names = FALSE, legend = TRUE,
           title = 'NonLeisional, DIABLO comp 1 - 2', ellipse = T, abline=T)
 ```
 
+```{r}
+#| label: pub1
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/plotIndiv_nonLeisional.svg", width = 12, height = 7)
+plotIndiv(diablo.NonLeisional, ind.names = FALSE, legend = TRUE, 
+          ellipse = T, abline=T)
+dev.off()
+```
+
 ### Variables
 
 ```{r}
@@ -245,6 +257,20 @@ circosPlot(diablo.NonLeisional, cutoff = 0.7, line = TRUE,
            color.cor = c("chocolate3","grey20"), size.variables = 1)
 ```
 
+```{r}
+#| label: pub2
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/circosPlot_nonLeisional.svg", width = 10, height = 10)
+circosPlot(diablo.NonLeisional, cutoff = 0.7, line = TRUE, 
+           color.blocks = c('darkorchid', 'brown1'),
+           color.cor = c("chocolate3","grey20"), size.variables = 0.70, 
+           size.labels = 1.5)
+dev.off()
+```
+
 #### Loadings plot
 
 ```{r}
@@ -257,6 +283,57 @@ circosPlot(diablo.NonLeisional, cutoff = 0.7, line = TRUE,
 #| fig-align: center
 
 plotLoadings(diablo.NonLeisional, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+# extracting microbiome loadings
+mic_loadings_df <- data.frame(
+  variable = rownames(diablo.NonLeisional$loadings$mic),
+  loading = diablo.NonLeisional$loadings$mic[, 1],  # component 1
+  comp = 1
+)
+mic_loadings_df <- mic_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading > 0, "pso_nonleisional", "control"))
+loadings_plot_mic <- ggplot(mic_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "MIC",
+    y = "Loadings value"
+  ) +
+  theme(axis.line.y = element_blank()) +
+  scale_fill_manual(values = c("#567adf", "#df9138ff"))
+
+# extracting snp loadings
+
+snp_loadings_df <- data.frame(
+  variable = rownames(diablo.NonLeisional$loadings$snp),
+  loading = diablo.NonLeisional$loadings$snp[, 1],  # component 1
+  comp = 1
+)
+snp_loadings_df <- snp_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading > 0, "pso_nonleisional", "control"))
+loadings_plot_snp <- ggplot(snp_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "SNP",
+    y = "Loadings value"
+  ) +
+  theme(axis.line.y = element_blank()) +
+  scale_fill_manual(values = c("#567adf", "#df9138ff"))
+```
+
+```{r}
+#| label: pub3
+#| warning: false
+#| message: false
+#| eval: false
+library(ggpubr)
+svg("../Publication_figures/loadingsPlot_nonLeisional.svg", width = 10, height = 8)
+ggarrange(loadings_plot_mic, loadings_plot_snp, ncol = 2, common.legend=T, legend="right")
+dev.off()
 ```
 
 #### Heatmap
@@ -273,6 +350,19 @@ plotLoadings(diablo.NonLeisional, comp = 1, contrib = 'max', method = 'median', 
 
 cimDiablo(diablo.NonLeisional, color.blocks = c('darkorchid', 'brown1'),
           comp = 1, margin=c(8,20), legend.position = "right")
+```
+
+```{r}
+#| label: pub4
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/heatMap_nonLeisional.svg", width = 15, height = 10)
+cimDiablo(diablo.NonLeisional, transpose = T, color.blocks = c('darkorchid', 'brown1'),
+          comp = 1, margin=c(8,20), legend.position = "topright",
+          row.cex = 1.5, col.cex = 1.5, size.legend = 1)
+dev.off()
 ```
 
 ## AUC & Prediction
@@ -300,4 +390,42 @@ predict.diablo.NonLeision <- predict(diablo.NonLeisional, newdata = data.test.No
 confusion.mat.NonLeision <- get.confusion_matrix(truth = droplevels(sample_info_ord$Type), 
                      predicted = predict.diablo.NonLeision$WeightedVote$centroids.dist[,2])
 confusion.mat.NonLeision
+```
+
+# NMDS from latent
+
+```{r}
+#| label: nmds
+#| warning: false
+#| message: false
+#| eval: false
+
+cim.res <- cimDiablo(diablo.NonLeisional, transpose = T, color.blocks = c('darkorchid', 'brown1'),
+          comp = 1, margin=c(8,20), legend.position = "topright")
+
+library(vegan)
+set.seed(100)
+non_dist <- dist(as.data.frame(cim.res$mat))
+non_NMDS <- metaMDS(non_dist, k=2)
+
+non_NMDS_long <- non_NMDS$points %>%
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  left_join(sample_info)
+
+non_nmds_plot <- ggplot(non_NMDS_long) +
+  geom_point(aes(MDS1, MDS2, color = Type), size = 4) +
+  stat_ellipse(aes(MDS1, MDS2, color = Type), type = "t") +
+  xlab('NMDS1') +
+  ylab('NMDS2') +
+  geom_hline(yintercept = 0, color = "lightgrey", linetype = 2) +
+  geom_vline(xintercept = 0, color = "lightgrey", linetype = 2) +
+  scale_color_manual(values = c("#567adf", "#df9138ff")) +
+  theme_light(base_size = 16) +
+  theme(panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank())
+
+svg("../Publication_figures/nmds_nonLeisional.svg", width = 10, height = 8)
+non_nmds_plot
+dev.off()
 ```

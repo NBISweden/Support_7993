@@ -260,6 +260,18 @@ plotIndiv(diablo.Severity, ind.names = FALSE, legend = TRUE,
           title = 'Severity, DIABLO comp 1 - 2', ellipse = T, abline=T)
 ```
 
+```{r}
+#| label: pub1
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/plotIndiv_severity.svg", width = 10, height = 7)
+plotIndiv(diablo.Severity, ind.names = FALSE, legend = TRUE, 
+          ellipse = T, abline=T)
+dev.off()
+```
+
 ### Variables
 
 ```{r}
@@ -295,6 +307,20 @@ circosPlot(diablo.Severity, cutoff = 0.7, line = TRUE,
            color.cor = c("chocolate3","grey20"), size.variables = 1)
 ```
 
+```{r}
+#| label: pub2
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/circosPlot_severity.svg", width = 10, height = 10)
+circosPlot(diablo.Severity, cutoff = 0.7, line = TRUE, 
+           color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+           color.cor = c("chocolate3","grey20"), size.variables = 0.70, 
+           size.labels = 1.5)
+dev.off()
+```
+
 #### Loadings plot
 
 ```{r}
@@ -307,6 +333,78 @@ circosPlot(diablo.Severity, cutoff = 0.7, line = TRUE,
 #| fig-align: center
 
 plotLoadings(diablo.Severity, comp = 1, contrib = 'max', method = 'median', size.name = 1.5)
+# extracting microbiome_leisional loadings
+lei_loadings_df <- data.frame(
+  variable = rownames(diablo.Severity$loadings$mic_lei),
+  loading = diablo.Severity$loadings$mic_lei[, 1],  # component 1
+  comp = 1
+)
+lei_loadings_df <- lei_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading < -0.03, "Low", ifelse(loading > 0.02, "High", "Medium")))
+loadings_plot_lei <- ggplot(lei_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "MIC_LEI",
+    y = "Loadings value"
+  ) +
+  theme(axis.line.y = element_blank()) +
+  scale_fill_manual(values = c("#567adf", "#df9138ff", "#aaa49eff"))
+
+# extracting microbiome_nonleisional loadings
+non_loadings_df <- data.frame(
+  variable = rownames(diablo.Severity$loadings$mic_non),
+  loading = diablo.Severity$loadings$mic_non[, 1],  # component 1
+  comp = 1
+)
+non_loadings_df <- non_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading < -0.03, "Low", ifelse(loading > 0.02, "High", "Medium")))
+loadings_plot_non <- ggplot(non_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "MIC_NON",
+    y = "Loadings value"
+  ) +
+  theme(axis.line.y = element_blank()) +
+  scale_fill_manual(values = c("#567adf", "#df9138ff", "#aaa49eff"))
+
+# extracting snp loadings
+
+snp_loadings_df <- data.frame(
+  variable = rownames(diablo.Severity$loadings$snp),
+  loading = diablo.Severity$loadings$snp[, 1],  # component 1
+  comp = 1
+)
+snp_loadings_df <- snp_loadings_df %>%
+                    filter(loading != 0) %>%
+                    mutate(status = ifelse(loading < -0.08, "Low", ifelse(loading > 0.03, "High", "Medium")))
+loadings_plot_snp <- ggplot(snp_loadings_df, aes(x = reorder(variable, abs(loading)), y = loading, fill = status)) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(
+    x = "SNP",
+    y = "Loadings value"
+  ) +
+  theme(axis.line.y = element_blank()) +
+  scale_fill_manual(values = c("#567adf", "#df9138ff", "#aaa49eff"))
+```
+
+```{r}
+#| label: pub3
+#| warning: false
+#| message: false
+#| eval: false
+library(ggpubr)
+svg("../Publication_figures/loadingsPlot_severity.svg", width = 10, height = 10)
+ggarrange(ggarrange(loadings_plot_lei, loadings_plot_non, ncol = 2, common.legend=T), ggarrange(loadings_plot_snp, NULL, ncol = 2), nrow = 2, common.legend=T, legend="right")
+dev.off()
+
 ```
 
 #### Heatmap
@@ -323,6 +421,19 @@ plotLoadings(diablo.Severity, comp = 1, contrib = 'max', method = 'median', size
 
 cimDiablo(diablo.Severity, color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
           comp = 1, margin=c(8,20), legend.position = "right")
+```
+
+```{r}
+#| label: pub4
+#| warning: false
+#| message: false
+#| eval: false
+
+svg("../Publication_figures/heatMap_severity.svg", width = 15, height = 10)
+cimDiablo(diablo.Severity, transpose = T, color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+          comp = 1, margin=c(8,30), legend.position = "topright",
+          row.cex = 1.5, col.cex = 1.5, size.legend = 1)
+dev.off()
 ```
 
 ## AUC & Prediction
