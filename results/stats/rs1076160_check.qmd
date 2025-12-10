@@ -1,0 +1,49 @@
+---
+title: "rs1076160 check"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+```{r}
+#| label: raw 
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+
+all_gen <- read.table("../../data/snp_raw.tsv", sep = "\t", header = T, check.names = F)
+all_gen[all_gen == ''] <- NA
+
+snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+
+rs1076160_info <-  snp_filt %>% 
+    rownames_to_column('SampleID') %>% 
+    dplyr::select(SampleID, rs1076160) %>% 
+    rename(numeric_rs1076160 = rs1076160) %>% 
+    left_join(all_gen %>% rename(coded_rs1076160 = rs1076160) %>% 
+        dplyr::select(SampleID, coded_rs1076160))
+head(rs1076160_info)
+```

@@ -39,3 +39,5 @@ scratch/*
 
 code/nextflow
 code/.nextflow*
+
+doc/manuscript/*
