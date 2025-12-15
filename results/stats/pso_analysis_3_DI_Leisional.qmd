@@ -237,7 +237,7 @@ spe_glom_psq <- tax_glom(spe_psq, "Species")
 #| fig-dpi: 400
 #| fig-align: center
 
-snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+snp_filt <- read.table("../snp_filtered_ordered.tsv", row.names = 1, header = T)
 low.count.removal <- function(
                         data, # OTU count df of size n (sample) x p (OTU)
                         percent=0.01 # cutoff chosen

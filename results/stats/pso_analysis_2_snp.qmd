@@ -214,7 +214,7 @@ dim(filt_gen)
 
 convert_to_numeric <- function(geno_column) {
   geno_column <- as.character(geno_column)  # Ensure character format to handle factor variables correctly
-  alleles <- unique(unlist(strsplit(na.omit(geno_column), " ")))  # Extract unique alleles by splitting the genotype string
+  alleles <- names(sort(table(unlist(strsplit(na.omit(geno_column), " "))), decreasing = TRUE))  # Extract unique alleles by splitting the genotype string
   if (length(alleles) != 2) return(rep(NA, length(geno_column)))  # Skip non-biallelic SNPs by returning NA for all individuals
   ref_allele <- alleles[1]  # Define the baseline allele, e.g. reference allele
   alt_allele <- alleles[2]  # Define the other allele, e.g. alternate allele
@@ -465,7 +465,7 @@ adonis2(as.matrix(snp_dist) ~ SmokingSnuff, data = snp_meta, permutations = 999)
 num_gen_mat %>%
   as.data.frame(row.names = filt_gen$SampleID) %>%
   rownames_to_column('SampleID') %>%
-  write_tsv("./snp_filtered.tsv")
+  write_tsv("../snp_filtered_ordered.tsv")
 ```
 
 
