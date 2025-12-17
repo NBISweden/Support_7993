@@ -39,7 +39,7 @@ theme_set(theme_bw())
 set.seed(100)
 
 setwd("/workspaces/7993_Mic_Psori/results/stats")
-snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+snp_filt <- read.table("../snp_filtered_ordered.tsv", row.names = 1, header = T)
 snp_non <- snp_filt %>%
   rownames_to_column('SampleID') %>%
   mutate(SampleID = str_replace(SampleID, "(^M.+)P$", "\\1K")) %>%

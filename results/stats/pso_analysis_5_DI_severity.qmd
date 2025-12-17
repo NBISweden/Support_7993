@@ -136,7 +136,7 @@ The outliers `M16MK` (high library size) is removed.
 #| fig-dpi: 400
 #| fig-align: center
 
-snp_filt <- read.table("../snp_filtered.tsv", row.names = 1, header = T)
+snp_filt <- read.table("../snp_filtered_ordered.tsv", row.names = 1, header = T)
 com_samp <- Reduce(intersect, list(row.names(snp_filt), row.names(mic.lei.clr), row.names(mic.non.clr)))
 
 snp.filt <- snp_filt[which(row.names(snp_filt) %in% com_samp), ]
@@ -465,4 +465,45 @@ predict.diablo.Severity <- predict(diablo.Severity, newdata = data.test.Severity
 confusion.mat.Severity <- get.confusion_matrix(truth = droplevels(sample_info_ord$PASISeverity), 
                      predicted = predict.diablo.Severity$WeightedVote$centroids.dist[,2])
 confusion.mat.Severity
+```
+
+# NMDS from latent
+
+```{r}
+#| label: nmds
+#| warning: false
+#| message: false
+#| eval: false
+
+cim.res <- cimDiablo(diablo.Severity, transpose = T, color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+          comp = 1, margin=c(8,30), legend.position = "topright",
+          row.cex = 1.5, col.cex = 1.5, size.legend = 1)
+
+library(vegan)
+set.seed(100)
+sev_dist <- dist(as.data.frame(cim.res$mat))
+sev_NMDS <- metaMDS(sev_dist, k=2)
+
+sample_info_ord$PASISeverity <- factor(sample_info_ord$PASISeverity, levels = c("High", "Low", "Medium"))
+
+sev_NMDS_long <- sev_NMDS$points %>%
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  left_join(sample_info_ord %>% rownames_to_column('SampleID'))
+
+sev_nmds_plot <- ggplot(sev_NMDS_long) +
+  geom_point(aes(MDS1, MDS2, color = PASISeverity), size = 4) +
+  stat_ellipse(aes(MDS1, MDS2, color = PASISeverity), type = "t") +
+  xlab('NMDS1') +
+  ylab('NMDS2') +
+  geom_hline(yintercept = 0, color = "lightgrey", linetype = 2) +
+  geom_vline(xintercept = 0, color = "lightgrey", linetype = 2) +
+  scale_color_manual(values = c("#567adf", "#df9138ff", "#aaa49eff")) +
+  theme_light(base_size = 16) +
+  theme(panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank())
+
+svg("../Publication_figures/nmds_severity.svg", width = 10, height = 8)
+sev_nmds_plot
+dev.off()
 ```
