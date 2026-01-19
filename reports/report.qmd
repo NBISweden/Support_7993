@@ -1,13 +1,13 @@
 ---
 params:
-    project_title: "Project Title"
-    redmine_issue: "#NNNN"
-    uppmax_project: "/b2000000"
-    requester_name: "Re Quester"
-    requester_mail: "re.quester@ki.se"
-    pi_name: "Prin Cipal"
-    pi_mail: "prin.cipal@ki.se"
-    organisation: "Karolinska Institutet"
+    project_title: "Association between microbiome, genetic susceptibility and psoriasis severity"
+    redmine_issue: "#7993"
+    naiss_project: "2025/22-417"
+    requester_name: "Oliver Seifert"
+    requester_mail: "oliver.seifert@liu.se"
+    pi_name: "Oliver Seifert"
+    pi_mail: "oliver.seifert@liu.se"
+    organisation: "Linköping Universitet"
     staff_name: "Lokeshwaran Manoharan"
     staff_mail: "lokeshwaran.manoharan@nbis.se"
 title: "`r params$project_title`"
@@ -28,8 +28,7 @@ format:
 affil <- paste("National Bioinformatics Infrastructure Sweden, Science for",
     "Life Laboratory, Department of Laboratory Medicine, Lund University")
 link_support <- "https://nbis.se/services/bioinformatics"
-link_uppmax <- paste("https://www.uppmax.uu.se/support/faq/",
-    "general-miscellaneous-faq/acknowledging-uppmax-and-naiss/")
+link_naiss <- paste("https://www.naiss.se/policies/acknowledge/")
 link_authorship <- "http://www.icmje.org/recommendations/"
 link_agreement <- "https://nbis.se/uploads/nbis_support_useragreement_f2c52d955b.pdf"
 link_acknowledge <- paste("https://ngisweden.scilifelab.se/resources/",
@@ -49,7 +48,14 @@ link_data_center <- "https://www.scilifelab.se/data/"
 # Work log
 *A brief summary of the project's key points.*
 
- * **2023-12-19:** Meeting with the group to plan data analyses
+ * **Preprocessing:** The 16S data from 146 samples were pre-processed using the [nf-core/ampliseq](https://nf-co.re/ampliseq) pipeline version 2.14.0. In brief the pipeline takes the raw reads and processes them to ASVs after quality filtering and denoising. The pipeline mainly uses [DADA2](https://doi.org/10.1038/nmeth.3869) to process the amplicon datasets to ASVs and they are taxonomically classified using [SILVA (version 138.2) SSU](https://zenodo.org/records/14169026/files/silva_nr99_v138.2_toSpecies_trainset.fa.gz, https://zenodo.org/records/14169026/files/silva_v138.2_assignSpecies.fa.gz) database. Later [LULU](https://www.nature.com/articles/s41467-017-01312-x) was to cluster and curate the ASVs. 
+   * All the analysis related code can be found in the [GITHUB REPO](https://github.com/NBISweden/Support_7993)
+ * **pso_analysis_1_mbiom.html:** This file contains the statistical analysis of the 16S amplicons. This includes the quality filtering of the ASVs, visualization of the taxonomic abundance in relation to the metadata of the samples and also their alpha- and beta-diversity measures along with their related statistics. 
+ * **pso_analysis_2_snp.html:** This file contains the statistics related to the SNPs from the patients/controls in this study. The relationship between the SNP distribution and also their patient metadata was also explored here.
+ * **pso_analysis_3_DI_Leisional.html:** Genotypic data (SNP) was integrated with microbiomes of the lesional psoriaris from the same patients to predict psoriasis group against the control group. The data was normalized using the R package [mixOmics](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005752) and the [DIABLO](https://pubmed.ncbi.nlm.nih.gov/30657866/) approach was used for the integration.
+ * **pso_analysis_4_DI_NonLeisional.html:** Genotypic data (SNP) was integrated with microbiomes of the non-lesional psoriaris from the same patients to predict psoriasis group against the control group. The data was normalized using the R package [mixOmics](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005752) and the [DIABLO](https://pubmed.ncbi.nlm.nih.gov/30657866/) approach was used for the integration.
+ * **pso_analysis_5_DI_severity.html:** Lesional, non-lesional and the genotypic data were integrated together from the same patients to predict the severity of the psoriasis disease.
+ * **rs1076160_check.html:** For the particular SNP `rs1076160`, the numerical data conversion from SNP was checked to correct the direction of significance in the integration.
 
 # Practical information
 
@@ -57,7 +63,7 @@ link_data_center <- "https://www.scilifelab.se/data/"
 Unfortunately, NBIS does not have resources to keep any files associated with
 the support request; we kindly suggest that you safely store the results
 delivered by us. In addition, we kindly ask that you remove the files from
-UPPMAX/UPPNEX. The main storage at UPPNEX is optimized for high-speed and
+NAISS. The main storage at UPPNEX is optimized for high-speed and
 parallel access, which makes it expensive and not the right place for long-term
 archiving. Please be considerate of your fellow researchers by not taking up
 this expensive space.
@@ -85,15 +91,15 @@ the ethical recommendations for authorship, *i.e.* the [ICMJE
 recommendations](`r link_authorship`). If applicable, please include
 *`r params$staff_name`, `r affil`* as co-author. 
 
-In addition, Uppmax kindly asks you to [acknowledge UPPMAX and
-NAISS](`r link_uppmax`). If applicable, please add: *The computations/
+In addition, NAISS kindly asks you to [acknowledge
+NAISS](`r link_naiss`). If applicable, please add: *The computations/
 data handling/[SIMILAR] were/was enabled by resources in project 
-`r params$uppmax_project` provided by the National Academic Infrastructure for 
-Supercomputing in Sweden (NAISS) at UPPMAX, funded by the Swedish Research 
+`r params$naiss_project` provided by the National Academic Infrastructure for 
+Supercomputing in Sweden (NAISS), funded by the Swedish Research 
 Council through grant agreement no. 2022-06725*
 
 In any and all publications based on data from NGI Sweden, the authors
-must [acknowledge SciLifeLab, NGI, VR and UPPMAX](`r link_acknowledge`).
+must [acknowledge SciLifeLab, NGI, VR and NAISS](`r link_acknowledge`).
 
 ## Closing procedures
 You should soon be contacted by one of our managers with a request to close down 
