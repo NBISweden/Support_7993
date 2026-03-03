@@ -231,8 +231,22 @@ convert_to_numeric <- function(geno_column) {
 
 # Apply the conversion function to all SNP columns in the filtered genotype data
 snp_data <- filt_gen[, -1]  # Remove the "CEL file ID" column to focus on SNP markers
-num_gen_mat <- apply(snp_data, 2, convert_to_numeric)  # Apply the conversion function to each SNP column
-num_gen_mat <- apply(num_gen_mat, 2, function(x) { # Impute missing values with the mean of each column
+#num_gen_mat <- apply(snp_data, 2, convert_to_numeric)  # Apply the conversion function to each SNP column
+
+alt_allele <- read.table("../../doc/SNP_allele_dosage", sep = "\t", header = T, row.names = 1, check.names = F)
+names(alt_allele) <- "alt"
+
+# Count occurrences of the alternative allele for each SNP marker
+allele_counts <- snp_data %>%
+  # For each column (SNP marker)
+  imap_dfc(~ {
+    # Get the alternative allele for this marker
+    alt <- alt_allele[.y, "alt"]
+    # Count how many times the alt allele appears in each genotype
+    str_count(.x, alt)
+  })
+
+num_gen_mat <- apply(allele_counts, 2, function(x) { # Impute missing values with the mean of each column
   x[is.na(x)] <- mean(x, na.rm = TRUE)
   return(x)
 })
