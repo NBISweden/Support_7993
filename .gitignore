@@ -28,6 +28,7 @@ results/*
 !results/ampliseq_16S_output/
 results/ampliseq_16S_output/*
 !results/ampliseq_16S_output/pipeline_info
+!results/ampliseq_16S_output/summary_report
 
 scratch/*
 !scratch/README.md
