@@ -1,0 +1,194 @@
+---
+title: "Power Analysis - Severity"
+author: "Lokesh Mano"
+date: last-modified
+format:
+  html:
+    embed-resources: true
+    self-contained-math: true
+    toc: true
+    toc-location: left
+    cap-location: top
+    fig-cap-location: top
+    code-fold: true
+    code-tools: true
+    mainfont: "Baskerville"
+    font-size: 12
+---
+
+```{r}
+#| label: micr-sort
+#| warning: false
+#| message: false
+#| include: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(ggplot2)
+library(phyloseq)
+library(dplyr)
+library(tidyverse)
+library(plotly)
+
+theme_set(theme_bw())
+set.seed(100)
+
+setwd("/workspaces/7993_Mic_Psori/results/stats")
+
+
+low.count.removal <- function(
+                        data, # OTU count df of size n (sample) x p (OTU)
+                        percent=0.01 # cutoff chosen
+                        ){
+    keep.otu = which(colSums(data)*100/(sum(colSums(data))) > percent)
+    data.filter = data[,keep.otu]
+    return(list(data.filter = data.filter, keep.otu = keep.otu))
+}
+
+#Leisional microbiome samples
+spe_glom_psq <- readRDS("../spe_glom_psq.RDS")
+spe_lei <- subset_samples(spe_glom_psq, Type == "pso_lesional")
+taxa_info <- as.data.frame(tax_table(spe_lei))
+mic.raw <- as.data.frame(t(otu_table(spe_lei)))
+names(mic.raw) <- taxa_info$Species
+mic.offset <- mic.raw+1
+result.filter <- low.count.removal(mic.offset, percent=0.01)
+mic.lei.filter <- result.filter$data.filter
+length(result.filter$keep.otu) 
+
+#Non-Leisional microbiome samples
+spe_non <- subset_samples(spe_glom_psq, Type == "pso_nonlesional")
+taxa_info <- as.data.frame(tax_table(spe_non))
+mic.raw <- as.data.frame(t(otu_table(spe_non)))
+names(mic.raw) <- taxa_info$Species
+mic.offset <- mic.raw+1
+result.filter <- low.count.removal(mic.offset, percent=0.01)
+mic.non.filter <- result.filter$data.filter
+length(result.filter$keep.otu) 
+
+mic.non.filter <- mic.non.filter %>%
+  rownames_to_column('SampleID') %>%
+  mutate(SampleID = str_replace(SampleID, "(^M.+)K$", "\\1P")) %>%
+  column_to_rownames(var = "SampleID")
+```
+
+```{r}
+#| label: micr-samp
+#| warning: false
+#| message: false
+#| include: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(mixOmics)
+set.seed(100)
+
+lib.size <- apply(mic.lei.filter, 1, sum) # determine total count for each sample
+barplot(lib.size) # and plot as bar plot
+mic.lei.filter <- mic.lei.filter[which(lib.size > 20000),]
+mic.lei.clr <- logratio.transfo(as.matrix(mic.lei.filter), 
+                             logratio = 'CLR', offset = 0)
+```
+
+```{r}
+#| label: micr-samp2
+#| warning: false
+#| message: false
+#| include: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+
+set.seed(100)
+
+lib.size <- apply(mic.non.filter, 1, sum) # determine total count for each sample
+barplot(lib.size) # and plot as bar plot
+mic.non.filter <- mic.non.filter[which(lib.size < 250000),]
+mic.non.clr <- logratio.transfo(as.matrix(mic.non.filter), 
+                             logratio = 'CLR', offset = 0)
+```
+
+```{r}
+#| label: snp
+#| warning: false
+#| message: false
+#| include: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+snp_filt <- read.table("../snp_filtered_ordered.tsv", row.names = 1, header = T)
+com_samp <- Reduce(intersect, list(row.names(snp_filt), row.names(mic.lei.clr), row.names(mic.non.clr)))
+
+snp.filt <- snp_filt[which(row.names(snp_filt) %in% com_samp), ]
+snp.filt.final <- snp.filt[order(row.names(snp.filt)), ]
+
+mic.lei.final <- mic.lei.clr[which(row.names(mic.lei.clr) %in% com_samp), ]
+mic.lei.final <- mic.lei.final[order(row.names(mic.lei.final)), ] %>%
+                  as.data.frame()
+
+
+mic.non.final <- mic.non.clr[which(row.names(mic.non.clr) %in% com_samp), ]
+mic.non.final <- mic.non.final[order(row.names(mic.non.final)), ] %>%
+                  as.data.frame()
+
+sample_info <- as.data.frame(sample_data(spe_lei))
+
+sample_info_ord <- snp.filt %>% 
+  as.data.frame() %>%
+  rownames_to_column('SampleID') %>%
+  dplyr::select(SampleID) %>%
+  left_join(sample_info) %>% 
+  column_to_rownames(var = "SampleID")
+```
+
+# MultiPower
+
+```{r}
+dim(mic.lei.final)
+```
+
+## FDR 0.1
+
+```{r}
+#| label: multipower
+#| warning: false
+#| message: false
+#| fig-height: 10
+#| fig-width: 20
+#| fig-dpi: 400
+#| fig-align: center
+
+library(MultiPower)
+library(FDRsampsize)
+
+set.seed(100)
+X <- list(mic_lei = t(mic.lei.final),
+          mic_non = t(mic.non.final),
+          snp = t(snp.filt.final))
+
+Y <- list(mic_lei = factor(sample_info_ord$PASISeverity, levels = c("High", "Low", "Medium")),
+          mic_non = factor(sample_info_ord$PASISeverity, levels = c("High", "Low", "Medium")),
+          snp = factor(sample_info_ord$PASISeverity, levels = c("High", "Low", "Medium")))
+Z <- c(2,2,2)
+
+P <- MultiPower(X, Y, Z, omicPower = 0.6, averagePower = 0.85, null.effect = 0, fdr = 0.1, cost = 1, equalSize = TRUE, max.size = 2000, omicCol = NULL, powerPlots = TRUE)
+
+P$data2plot
+```
+
+## FDR 0.05
+
+
+```{r}
+P <- MultiPower(X, Y, Z, omicPower = 0.6, averagePower = 0.85, null.effect = 0, fdr = 0.05, cost = 1, equalSize = TRUE, max.size = 20000, omicCol = NULL, powerPlots = TRUE)
+
+P$data2plot
+```

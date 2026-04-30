@@ -49,6 +49,9 @@ RUN mamba install -c bioconda r-factominer
 RUN R -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
 RUN R -e "BiocManager::install('mixOmics')"
 
+RUN R -e "remotes::install_github('ConesaLab/MultiPower')"
+RUN R -e "install.packages('FDRsampsize', repos='http://cran.us.r-project.org')"
+
 ARG DEBIAN_FRONTEND=noninteractive
 RUN wget https://go.microsoft.com/fwlink/?LinkID=760868 -O vscode.deb \
     && apt install -y ./vscode.deb \
